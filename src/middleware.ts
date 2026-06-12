@@ -1,5 +1,10 @@
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
+import { authConfig } from "@/auth.config";
+
+// Edge-safe instance: built from authConfig WITHOUT the Drizzle adapter, so
+// the DB driver never enters the edge bundle. JWT verification only.
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;

@@ -1,25 +1,13 @@
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { users, accounts } from "@/lib/schema";
+import { authConfig } from "@/auth.config";
 
+// Full config = edge-safe base (providers/callbacks/pages) + the DB adapter.
+// Used by route handlers and server components on the Node runtime. Middleware
+// uses `authConfig` directly (without the adapter) so it stays edge-safe.
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   adapter: DrizzleAdapter(db, { usersTable: users, accountsTable: accounts }),
-  providers: [Google],
-  session: { strategy: "jwt" },
-  callbacks: {
-    jwt({ token, user }) {
-      if (user?.id) token.id = user.id;
-      return token;
-    },
-    session({ session, token }) {
-      if (token.id) session.user.id = token.id as string;
-      return session;
-    },
-  },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
 });
