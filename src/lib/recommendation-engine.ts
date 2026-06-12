@@ -76,7 +76,11 @@ export async function buildFeed(
   const withProviders = await Promise.all(
     filtered.slice(0, 60).map(async (movie) => {
       try {
-        const providers = await getCachedWatchProviders(movie.id, "movie", region);
+        const providers = await getCachedWatchProviders(movie.id, "movie", region, {
+          title: movie.title,
+          releaseYear: movie.release_date ? Number(movie.release_date.slice(0, 4)) || null : null,
+          posterPath: movie.poster_path,
+        });
         const available: string[] = [];
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {
@@ -176,7 +180,11 @@ export async function buildMoreFeed(
   const withProviders = await Promise.all(
     candidates.slice(0, 40).map(async (movie) => {
       try {
-        const providers = await getCachedWatchProviders(movie.id, "movie", region);
+        const providers = await getCachedWatchProviders(movie.id, "movie", region, {
+          title: movie.title,
+          releaseYear: movie.release_date ? Number(movie.release_date.slice(0, 4)) || null : null,
+          posterPath: movie.poster_path,
+        });
         const available: string[] = [];
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {
