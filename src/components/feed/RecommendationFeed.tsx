@@ -59,6 +59,7 @@ export function RecommendationFeed({ userId, ratingCount, platforms }: Props) {
   // Search: null = browsing the feed; an array (possibly empty) = showing results.
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FeedItem[] | null>(null);
+  const [similarResults, setSimilarResults] = useState<FeedItem[]>([]);
   const [searchExplanation, setSearchExplanation] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
 
@@ -76,6 +77,7 @@ export function RecommendationFeed({ userId, ratingCount, platforms }: Props) {
       const data = await res.json();
       if (data.error) { toast.error(data.error); return; }
       setSearchResults((data.results ?? []).map(toFeedItem));
+      setSimilarResults((data.similar ?? []).map(toFeedItem));
       setSearchExplanation(data.explanation ?? null);
     } catch {
       toast.error("Search failed. Please try again.");
@@ -87,6 +89,7 @@ export function RecommendationFeed({ userId, ratingCount, platforms }: Props) {
   function clearSearch() {
     setSearchQuery("");
     setSearchResults(null);
+    setSimilarResults([]);
     setSearchExplanation(null);
   }
 
@@ -409,6 +412,28 @@ export function RecommendationFeed({ userId, ratingCount, platforms }: Props) {
           );
         })}
       </div>
+
+      {/* More like this — similar titles for the searched query */}
+      {inSearchMode && similarResults.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-lg font-semibold">More like this</h2>
+          <div className={GRID_CLASSES[cardSize]} role="list" aria-label="Similar titles">
+            {similarResults.map((item) => (
+              <div key={item.tmdbId} role="listitem">
+                <RecommendationCard
+                  item={item}
+                  userRating={userRatings[item.tmdbId]}
+                  inWatchlist={watchlistIds.has(item.tmdbId)}
+                  onClick={() => setSelectedItem(item)}
+                  onRate={() => setSelectedItem(item)}
+                  onDismiss={() => handleDismiss(item)}
+                  onWatchlist={() => handleWatchlist(item)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Infinite scroll sentinel — feed only; search results aren't paginated */}
       {hasMore && !inSearchMode && (

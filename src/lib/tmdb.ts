@@ -100,6 +100,15 @@ export async function searchMulti(query: string) {
   );
 }
 
+// TMDB "recommendations" for a title — its similar/related titles. Movie and TV
+// endpoints each return their own media type, so we stamp media_type from `type`.
+export async function getSimilarTitles(tmdbId: number, type: "movie" | "tv") {
+  const data = await tmdbFetch<{ results: Array<TmdbMovie | TmdbShow> }>(
+    `/${type}/${tmdbId}/recommendations`
+  );
+  return { results: (data.results ?? []).map((r) => ({ ...r, media_type: type })) };
+}
+
 export async function discoverMovies(params: Record<string, string>) {
   return tmdbFetch<{ results: TmdbMovie[]; total_pages: number }>(
     "/discover/movie",
