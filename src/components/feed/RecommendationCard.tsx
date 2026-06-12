@@ -50,30 +50,32 @@ export function RecommendationCard({
         )}
 
         <RibbonBadge ribbon={item.ribbon} />
-
-        {/* Action buttons (show on hover) */}
-        <div className="absolute right-1.5 top-1.5 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-900/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label={`Hide ${item.title} from feed`}
-          >
-            <X className="h-3 w-3" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onWatchlist(); }}
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-primary/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label={inWatchlist ? `Remove ${item.title} from watchlist` : `Add ${item.title} to watchlist`}
-          >
-            {inWatchlist
-              ? <BookmarkCheck className="h-3 w-3 text-primary" aria-hidden="true" />
-              : <Bookmark className="h-3 w-3" aria-hidden="true" />
-            }
-          </button>
-        </div>
       </button>
+
+      {/* Action buttons (show on hover). Sibling of the poster button — not
+          nested inside it — since <button> cannot contain other <button>s.
+          Positioned over the poster via the card root's `relative`. */}
+      <div className="pointer-events-none absolute right-1.5 top-1.5 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-900/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+          aria-label={`Hide ${item.title} from feed`}
+        >
+          <X className="h-3 w-3" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={onWatchlist}
+          className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-primary/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+          aria-label={inWatchlist ? `Remove ${item.title} from watchlist` : `Add ${item.title} to watchlist`}
+        >
+          {inWatchlist
+            ? <BookmarkCheck className="h-3 w-3 text-primary" aria-hidden="true" />
+            : <Bookmark className="h-3 w-3" aria-hidden="true" />
+          }
+        </button>
+      </div>
 
       {/* Info */}
       <div className="flex flex-col gap-1.5 p-2">
