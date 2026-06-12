@@ -1,25 +1,22 @@
-import { NextRequest } from "next/server";
-import { getOrCreateUser, getUserIdFromRequest } from "@/lib/auth";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { watchlist } from "@/lib/schema";
 import { eq, and, desc } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
+export async function GET() {
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) return Response.json({ watchlist: [] });
 
-  const items = db
-    .select()
-    .from(watchlist)
-    .where(eq(watchlist.userId, userId))
-    .orderBy(desc(watchlist.addedAt))
-    .all();
-
+  const items = await db.select().from(watchlist).where(eq(watchlist.userId, userId)).orderBy(desc(watchlist.addedAt));
   return Response.json({ watchlist: items });
 }
 
-export async function POST(request: NextRequest) {
-  const user = await getOrCreateUser();
+export async function POST(request: Request) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
   const body = await request.json() as {
     tmdbId: number;
     tmdbType: "movie" | "tv";
@@ -27,35 +24,31 @@ export async function POST(request: NextRequest) {
     posterPath?: string | null;
   };
 
-  // Don't duplicate
-  const existing = db
+  const [existing] = await db
     .select()
     .from(watchlist)
-    .where(and(eq(watchlist.userId, user.id), eq(watchlist.tmdbId, body.tmdbId)))
-    .get();
+    .where(and(eq(watchlist.userId, userId), eq(watchlist.tmdbId, body.tmdbId)))
+    .limit(1);
 
   if (!existing) {
-    db.insert(watchlist).values({
-      userId: user.id,
+    await db.insert(watchlist).values({
+      userId,
       tmdbId: body.tmdbId,
       tmdbType: body.tmdbType,
       title: body.title,
       posterPath: body.posterPath ?? null,
-    }).run();
+    });
   }
 
   return Response.json({ ok: true });
 }
 
-export async function DELETE(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
-  if (!userId) return Response.json({ error: "No session" }, { status: 401 });
+export async function DELETE(request: Request) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { tmdbId } = await request.json() as { tmdbId: number };
-
-  db.delete(watchlist)
-    .where(and(eq(watchlist.userId, userId), eq(watchlist.tmdbId, tmdbId)))
-    .run();
-
+  await db.delete(watchlist).where(and(eq(watchlist.userId, userId), eq(watchlist.tmdbId, tmdbId)));
   return Response.json({ ok: true });
 }

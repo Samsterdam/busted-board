@@ -1,14 +1,14 @@
-import { NextRequest } from "next/server";
-import { getOrCreateUser, getUserIdFromRequest } from "@/lib/auth";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
+export async function GET() {
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) return Response.json({ country: "US", preferCaptions: false });
 
-  const user = db.select().from(users).where(eq(users.id, userId)).get();
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   return Response.json({
     country: user?.country ?? "US",
     preferCaptions: !!(user?.preferCaptions),
@@ -16,19 +16,25 @@ export async function GET(request: NextRequest) {
   });
 }
 
-export async function POST(request: NextRequest) {
-  const user = await getOrCreateUser();
+export async function POST(request: Request) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
   const body = await request.json() as {
     country?: string;
     preferCaptions?: boolean;
     contentLanguage?: string;
   };
 
-  db.update(users).set({
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) return Response.json({ error: "User not found" }, { status: 404 });
+
+  await db.update(users).set({
     country: body.country ?? user.country,
-    preferCaptions: body.preferCaptions ? 1 : 0,
+    preferCaptions: body.preferCaptions ?? user.preferCaptions,
     contentLanguage: body.contentLanguage ?? user.contentLanguage,
-  }).where(eq(users.id, user.id)).run();
+  }).where(eq(users.id, userId));
 
   return Response.json({ ok: true });
 }

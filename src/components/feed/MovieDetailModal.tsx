@@ -21,12 +21,12 @@ interface Props {
 }
 
 export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWatchlist, onRated }: Props) {
-  const [pendingRating, setPendingRating] = useState(userRating ?? 0);
+  const [currentRating, setCurrentRating] = useState(userRating ?? 0);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  async function saveRating() {
-    if (!pendingRating) return;
+  async function saveRating(rating: number, updatedNotes?: string) {
+    if (!rating) return;
     setSaving(true);
     try {
       await fetch("/api/ratings", {
@@ -37,17 +37,26 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
           tmdbType: item.tmdbType,
           title: item.title,
           posterPath: item.posterUrl,
-          rating: pendingRating,
-          notes: notes || null,
+          rating,
+          notes: (updatedNotes ?? notes) || null,
         }),
       });
       toast.success("Rating saved!");
-      onRated(pendingRating);
+      onRated(rating);
     } catch {
       toast.error("Could not save rating.");
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleStarChange(rating: number) {
+    setCurrentRating(rating);
+    saveRating(rating);
+  }
+
+  function handleNotesBlur() {
+    if (currentRating > 0 && notes) saveRating(currentRating, notes);
   }
 
   return (
@@ -121,17 +130,19 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
           {/* Rate */}
           <div className="space-y-2 border-t border-border pt-3">
             <p className="text-sm font-medium">Your rating</p>
-            <StarRating value={pendingRating} onChange={setPendingRating} size="md" />
-            {pendingRating > 0 && (
+            <StarRating value={currentRating} onChange={handleStarChange} size="md" />
+            {currentRating > 0 && (
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
+                onBlur={handleNotesBlur}
                 placeholder="Notes (optional) — I loved it because..."
                 className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary resize-none"
                 rows={2}
                 aria-label="Rating notes"
               />
             )}
+            {saving && <p className="text-xs text-muted-foreground">Saving…</p>}
           </div>
 
           {/* Actions */}
@@ -148,16 +159,6 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
                 : <><Bookmark className="h-4 w-4 mr-1" aria-hidden="true" /> Save</>
               }
             </Button>
-            {pendingRating > 0 && (
-              <Button
-                onClick={saveRating}
-                disabled={saving}
-                size="sm"
-                className="flex-1 bg-primary text-primary-foreground"
-              >
-                {saving ? "Saving…" : "Save Rating"}
-              </Button>
-            )}
           </div>
         </div>
       </DialogContent>

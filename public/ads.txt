@@ -1,0 +1,38 @@
+# ads.txt — authorized digital sellers (IAB spec)
+# Uncomment and fill the lines for each network you actually run, replacing
+# pub-XXXX / account ids with your own. Most managed networks (Mediavine,
+# Raptive, Ezoic, Monumetric) maintain your ads.txt for you — they'll give you
+# either lines to paste here or a redirect to host. Keep only what applies.
+
+# ── Google AdSense / Ad Manager / AdX ────────────────────────────────────────
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+
+# ── Amazon Publisher Services (TAM/APS) ──────────────────────────────────────
+# aps.amazon.com, XXXX, DIRECT
+
+# ── Media.net ────────────────────────────────────────────────────────────────
+# media.net, XXXXXXXX, DIRECT
+
+# ── Index Exchange ───────────────────────────────────────────────────────────
+# indexexchange.com, XXXXXX, DIRECT, 50b1c356f2c5c8fc
+
+# ── OpenX ────────────────────────────────────────────────────────────────────
+# openx.com, XXXXXXXXXX, DIRECT, 6a698e2ec38604c6
+
+# ── PubMatic ─────────────────────────────────────────────────────────────────
+# pubmatic.com, XXXXXX, DIRECT, 5d62403b186f2ace
+
+# ── Criteo ───────────────────────────────────────────────────────────────────
+# criteo.com, XXXXX, DIRECT
+
+# ── Sovrn ────────────────────────────────────────────────────────────────────
+# sovrn.com, XXXXXX, DIRECT, fafdf38b16bf6b2b
+
+# ── Taboola ──────────────────────────────────────────────────────────────────
+# taboola.com, XXXXXXX, DIRECT, c228e2ac4d3c1e44
+
+# ── Outbrain ─────────────────────────────────────────────────────────────────
+# outbrain.com, XXXXXXXXXXXXXXXXXXXXXXXXXXXX, DIRECT
+
+# ── BuySellAds ───────────────────────────────────────────────────────────────
+# buysellads.com, XXXX, DIRECT

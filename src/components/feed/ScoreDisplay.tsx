@@ -2,7 +2,13 @@
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StarRating } from "@/components/ratings/StarRating";
-import { getCinemaScoreColor } from "@/lib/scores";
+
+function getCinemaScoreColor(score: number | null): string {
+  if (score == null) return "text-neutral-400";
+  if (score >= 80) return "text-green-400";
+  if (score >= 60) return "text-amber-400";
+  return "text-red-400";
+}
 
 export function CinemaScoreBadge({ score, tooltip }: { score: number | null; tooltip: string[] }) {
   const colorClass = getCinemaScoreColor(score);

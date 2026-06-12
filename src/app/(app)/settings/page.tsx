@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { signOut } from "next-auth/react";
 import { PageShell } from "@/components/layout/PageShell";
 import { Button } from "@/components/ui/button";
 import { PlatformPicker } from "@/components/onboarding/PlatformPicker";
@@ -147,6 +148,14 @@ export default function SettingsPage() {
         >
           {saving ? "Saving…" : "Save Settings"}
         </Button>
+
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="w-full text-sm text-muted-foreground hover:text-destructive transition-colors underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          Sign out
+        </button>
       </div>
     </PageShell>
   );

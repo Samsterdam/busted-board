@@ -2,7 +2,7 @@ import { db } from "./db";
 import { scoresCache } from "./schema";
 import { eq, and } from "drizzle-orm";
 
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const OMDB_BASE = "https://www.omdbapi.com";
 const TIMEOUT_MS = 8_000;
 
@@ -16,9 +16,8 @@ export interface ScoreBreakdown {
 }
 
 function computeCinemaScore(audience: number | null, critics: number | null): number | null {
-  const a = audience != null ? audience * 10 : null; // normalize 0-10 → 0-100
+  const a = audience != null ? audience * 10 : null;
   const c = critics;
-
   if (a != null && c != null) return Math.round(a * 0.5 + c * 0.5);
   if (a != null) return Math.round(a);
   if (c != null) return Math.round(c);
@@ -69,10 +68,7 @@ function buildTooltip(
   return lines;
 }
 
-async function fetchOmdbScores(
-  title: string,
-  year: string
-): Promise<{ critics: number | null; awards: string | null }> {
+async function fetchOmdbScores(title: string, year: string): Promise<{ critics: number | null; awards: string | null }> {
   const key = process.env.OMDB_API_KEY;
   if (!key) return { critics: null, awards: null };
 
@@ -91,14 +87,9 @@ async function fetchOmdbScores(
     const data = await res.json();
     if (data.Response === "False") return { critics: null, awards: null };
 
-    // Find Rotten Tomatoes rating
-    const rtRating = data.Ratings?.find(
-      (r: { Source: string; Value: string }) => r.Source === "Rotten Tomatoes"
-    );
+    const rtRating = data.Ratings?.find((r: { Source: string; Value: string }) => r.Source === "Rotten Tomatoes");
     const critics = rtRating ? parseInt(rtRating.Value) : null;
-    const awards = data.Awards ?? null;
-
-    return { critics: isNaN(critics!) ? null : critics, awards };
+    return { critics: isNaN(critics!) ? null : critics, awards: data.Awards ?? null };
   } catch {
     return { critics: null, awards: null };
   }
@@ -114,14 +105,14 @@ export async function getScores(
   popularity: number | null,
   releaseDate: string | null
 ): Promise<ScoreBreakdown> {
-  // Check cache
-  const cached = db
+  const [cached] = await db
     .select()
     .from(scoresCache)
     .where(and(eq(scoresCache.tmdbId, tmdbId), eq(scoresCache.tmdbType, tmdbType)))
-    .get();
+    .limit(1);
 
-  const isFresh = cached && Date.now() - new Date(cached.fetchedAt).getTime() < CACHE_TTL_MS;
+  // fetchedAt is now a native Date from Postgres
+  const isFresh = cached && (Date.now() - cached.fetchedAt!.getTime()) < CACHE_TTL_MS;
   if (isFresh) {
     return {
       audienceScore: cached.audienceScore,
@@ -133,31 +124,17 @@ export async function getScores(
     };
   }
 
-  // Fetch fresh scores
   const { critics, awards } = await fetchOmdbScores(title, year);
   const audience = voteAverage;
   const cinema = computeCinemaScore(audience, critics);
   const ribbon = computeRibbon(voteAverage, popularity, voteCount, releaseDate, awards);
 
-  // Write to cache
-  const cacheRow = {
-    tmdbId,
-    tmdbType,
-    audienceScore: audience,
-    criticsScore: critics,
-    cinemaScore: cinema,
-    ribbon,
-    voteCount,
-    fetchedAt: new Date(),
-  };
+  const cacheRow = { tmdbId, tmdbType, audienceScore: audience, criticsScore: critics, cinemaScore: cinema, ribbon, voteCount, fetchedAt: new Date() };
 
   if (cached) {
-    db.update(scoresCache)
-      .set(cacheRow)
-      .where(and(eq(scoresCache.tmdbId, tmdbId), eq(scoresCache.tmdbType, tmdbType)))
-      .run();
+    await db.update(scoresCache).set(cacheRow).where(and(eq(scoresCache.tmdbId, tmdbId), eq(scoresCache.tmdbType, tmdbType)));
   } else {
-    db.insert(scoresCache).values(cacheRow).run();
+    await db.insert(scoresCache).values(cacheRow);
   }
 
   return {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Gem } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { RefreshCw, Gem, LayoutGrid, Grid2x2, Rows3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RecommendationCard } from "./RecommendationCard";
 import { MovieDetailModal } from "./MovieDetailModal";
@@ -20,11 +20,35 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [gemsOnly, setGemsOnly] = useState(false);
+  const [cardSize, setCardSize] = useState<"sm" | "md" | "lg">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("bb_card_size") as "sm" | "md" | "lg") ?? "sm";
+    }
+    return "sm";
+  });
+
+  function cycleSize() {
+    setCardSize((prev) => {
+      const next = prev === "sm" ? "md" : prev === "md" ? "lg" : "sm";
+      localStorage.setItem("bb_card_size", next);
+      return next;
+    });
+  }
+
+  const GRID_CLASSES = {
+    sm: "grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7",
+    md: "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+    lg: "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3",
+  };
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
   const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
   const [userRatings, setUserRatings] = useState<Record<number, number>>({});
   const [needsRatings, setNeedsRatings] = useState(false);
   const [staleWarning, setStaleWarning] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadFeed = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
@@ -64,6 +88,36 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
   }, [feed]);
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || feed.length === 0) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    const seenIds = feed.map((i) => i.tmdbId).join(",");
+    try {
+      const res = await fetch(`/api/recommendations/feed?page=${nextPage}&seenIds=${seenIds}`);
+      const data = await res.json();
+      const newItems: typeof feed = data.feed ?? [];
+      if (newItems.length === 0) { setHasMore(false); return; }
+      setFeed((prev) => [...prev, ...newItems]);
+      setPage(nextPage);
+    } catch {
+      // silently fail — user can scroll up and retry
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [feed, loadingMore, hasMore, page]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   async function handleDismiss(item: FeedItem) {
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
@@ -123,6 +177,18 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
           <Button
             variant="ghost"
             size="sm"
+            onClick={cycleSize}
+            className="text-muted-foreground"
+            aria-label={`Card size: ${cardSize}. Click to change.`}
+            title={`Card size: ${cardSize}`}
+          >
+            {cardSize === "sm" && <LayoutGrid className="h-4 w-4" aria-hidden="true" />}
+            {cardSize === "md" && <Grid2x2 className="h-4 w-4" aria-hidden="true" />}
+            {cardSize === "lg" && <Rows3 className="h-4 w-4" aria-hidden="true" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => loadFeed(true)}
             disabled={refreshing}
             aria-label="Refresh recommendations"
@@ -160,7 +226,7 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
 
       {/* Grid */}
       <div
-        className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+        className={GRID_CLASSES[cardSize]}
         role="list"
         aria-label="Recommendations"
       >
@@ -187,6 +253,25 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
         ))}
       </div>
 
+      {/* Infinite scroll sentinel */}
+      {hasMore && (
+        <div ref={sentinelRef} className="py-4 flex justify-center">
+          {loadingMore && (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 w-full">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-xl overflow-hidden border border-border">
+                  <div className="skeleton aspect-[2/3] w-full" />
+                  <div className="p-2 space-y-1.5">
+                    <div className="skeleton h-2.5 w-3/4 rounded" />
+                    <div className="skeleton h-5 w-8 rounded mx-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Detail modal */}
       {selectedItem && (
         <MovieDetailModal
@@ -209,7 +294,7 @@ function FeedSkeleton() {
   return (
     <div className="px-4 py-4">
       <div className="skeleton h-8 w-40 mb-4 rounded" />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="rounded-xl overflow-hidden">
             <div className="skeleton aspect-[2/3] w-full" />

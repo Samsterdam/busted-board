@@ -1,5 +1,4 @@
-import { NextRequest } from "next/server";
-import { getUserIdFromRequest } from "@/lib/auth";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { tasteProfile, userPlatforms, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
@@ -8,18 +7,18 @@ import { discoverMovies, searchMulti, getWatchProviders, posterUrl } from "@/lib
 import { getScores } from "@/lib/scores";
 import { PLATFORM_REGISTRY, ACCESSIBLE_PROVIDER_TYPES } from "@/lib/platforms";
 
-export async function POST(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
-  if (!userId) return Response.json({ error: "No session" }, { status: 401 });
+export async function POST(request: Request) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { query } = await request.json() as { query: string };
   if (!query?.trim()) return Response.json({ error: "Query required" }, { status: 400 });
 
-  const user = db.select().from(users).where(eq(users.id, userId)).get();
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   const region = user?.country ?? "US";
 
-  // Get taste profile
-  const profile = db.select().from(tasteProfile).where(eq(tasteProfile.userId, userId)).get();
+  const [profile] = await db.select().from(tasteProfile).where(eq(tasteProfile.userId, userId)).limit(1);
   const parsedProfile = profile?.topThemes ? {
     top_themes: JSON.parse(profile.topThemes ?? "[]"),
     avoid_themes: JSON.parse(profile.avoidThemes ?? "[]"),
@@ -29,16 +28,13 @@ export async function POST(request: NextRequest) {
     recommendation_strategy: profile.recommendationStrategy ?? "",
   } : null;
 
-  // Get user platforms
-  const platforms = db.select().from(userPlatforms).where(eq(userPlatforms.userId, userId)).all();
+  const platforms = await db.select().from(userPlatforms).where(eq(userPlatforms.userId, userId));
   const platformTmdbIds = platforms
     .map((p) => PLATFORM_REGISTRY.find((r) => r.slug === p.platformSlug)?.tmdbId)
     .filter((id): id is number => id != null);
 
-  // Interpret with Gemini
   const interpretation = await interpretSearchQuery(query, parsedProfile);
 
-  // Search TMDB
   let results;
   if (interpretation.search_term) {
     const res = await searchMulti(interpretation.search_term);
@@ -49,11 +45,7 @@ export async function POST(request: NextRequest) {
       Documentary: 99, Drama: 18, Fantasy: 14, Horror: 27, Mystery: 9648,
       Romance: 10749, "Science Fiction": 878, Thriller: 53,
     };
-    const genreIds = interpretation.genres
-      .map((g) => genreMap[g])
-      .filter(Boolean)
-      .join(",");
-
+    const genreIds = interpretation.genres.map((g) => genreMap[g]).filter(Boolean).join(",");
     const res = await discoverMovies({
       sort_by: interpretation.sort_by || "popularity.desc",
       "vote_average.gte": String(interpretation.min_vote_average || 6.0),
@@ -62,7 +54,6 @@ export async function POST(request: NextRequest) {
     results = (res.results ?? []).map((r) => ({ ...r, media_type: "movie" as const }));
   }
 
-  // Check platform availability
   const withAvailability = await Promise.all(
     results.slice(0, 20).map(async (r) => {
       try {
@@ -80,20 +71,14 @@ export async function POST(request: NextRequest) {
     })
   );
 
-  // Build response with scores
   const enriched = await Promise.all(
     withAvailability.slice(0, 8).map(async (r) => {
       const title = ("title" in r ? r.title : r.name) ?? "";
       const year = (("release_date" in r ? r.release_date : r.first_air_date) ?? "").slice(0, 4);
-      const posterPath = r.poster_path ?? null;
       const scores = await getScores(r.id, r.media_type, title, year, r.vote_average, r.vote_count, r.popularity, null);
-
       return {
-        tmdbId: r.id,
-        tmdbType: r.media_type,
-        title,
-        year,
-        posterUrl: posterUrl(posterPath, "w342"),
+        tmdbId: r.id, tmdbType: r.media_type, title, year,
+        posterUrl: posterUrl(r.poster_path ?? null, "w342"),
         overview: r.overview ?? "",
         platforms: r.platforms,
         cinemaScore: scores.cinemaScore,
@@ -104,9 +89,5 @@ export async function POST(request: NextRequest) {
     })
   );
 
-  return Response.json({
-    results: enriched,
-    explanation: interpretation.explanation,
-    query,
-  });
+  return Response.json({ results: enriched, explanation: interpretation.explanation, query });
 }

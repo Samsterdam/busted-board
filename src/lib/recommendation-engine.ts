@@ -50,52 +50,29 @@ export async function buildFeed(
   const eighteenMonthsAgo = new Date();
   eighteenMonthsAgo.setMonth(eighteenMonthsAgo.getMonth() - 18);
 
-  // Fetch 4 buckets in parallel for variety
   const [trending, hiddenGems, classics, recent] = await Promise.all([
     getTrendingMovies().then((r) => r.results ?? []).catch(() => []),
-    fetchCandidateBucket({
-      "vote_average.gte": "7.5",
-      "vote_count.gte": "500",
-      "popularity.lte": "20",
-      sort_by: "vote_average.desc",
-    }),
-    fetchCandidateBucket({
-      "vote_average.gte": "7.5",
-      "primary_release_date.lte": `${currentYear - 20}-12-31`,
-      sort_by: "vote_average.desc",
-    }),
-    fetchCandidateBucket({
-      "primary_release_date.gte": eighteenMonthsAgo.toISOString().split("T")[0],
-      sort_by: "popularity.desc",
-    }),
+    fetchCandidateBucket({ "vote_average.gte": "7.5", "vote_count.gte": "500", "popularity.lte": "20", sort_by: "vote_average.desc" }),
+    fetchCandidateBucket({ "vote_average.gte": "7.5", "primary_release_date.lte": `${currentYear - 20}-12-31`, sort_by: "vote_average.desc" }),
+    fetchCandidateBucket({ "primary_release_date.gte": eighteenMonthsAgo.toISOString().split("T")[0], sort_by: "popularity.desc" }),
   ]);
 
-  // Deduplicate across buckets
   const seen = new Set<number>();
   const allCandidates: TmdbMovie[] = [];
   for (const movie of [...trending, ...hiddenGems, ...classics, ...recent]) {
-    if (!seen.has(movie.id)) {
-      seen.add(movie.id);
-      allCandidates.push(movie);
-    }
+    if (!seen.has(movie.id)) { seen.add(movie.id); allCandidates.push(movie); }
   }
 
-  // Get user's watched + dismissed IDs to filter out
-  const watchedIds = new Set(
-    db.select({ tmdbId: ratings.tmdbId }).from(ratings).where(eq(ratings.userId, userId)).all().map((r) => r.tmdbId)
-  );
-  const dismissedIds = new Set(
-    db.select({ tmdbId: dismissedItems.tmdbId }).from(dismissedItems).where(eq(dismissedItems.userId, userId)).all().map((r) => r.tmdbId)
-  );
-  const watchlistIds = new Set(
-    db.select({ tmdbId: watchlist.tmdbId }).from(watchlist).where(eq(watchlist.userId, userId)).all().map((r) => r.tmdbId)
-  );
+  const watchedRows = await db.select({ tmdbId: ratings.tmdbId }).from(ratings).where(eq(ratings.userId, userId));
+  const dismissedRows = await db.select({ tmdbId: dismissedItems.tmdbId }).from(dismissedItems).where(eq(dismissedItems.userId, userId));
+  const watchlistRows = await db.select({ tmdbId: watchlist.tmdbId }).from(watchlist).where(eq(watchlist.userId, userId));
 
-  const filtered = allCandidates.filter(
-    (m) => !watchedIds.has(m.id) && !dismissedIds.has(m.id)
-  );
+  const watchedIds = new Set(watchedRows.map((r) => r.tmdbId));
+  const dismissedIds = new Set(dismissedRows.map((r) => r.tmdbId));
+  const watchlistIds = new Set(watchlistRows.map((r) => r.tmdbId));
 
-  // Check platform availability for each candidate
+  const filtered = allCandidates.filter((m) => !watchedIds.has(m.id) && !dismissedIds.has(m.id));
+
   const withProviders = await Promise.all(
     filtered.slice(0, 60).map(async (movie) => {
       try {
@@ -103,9 +80,7 @@ export async function buildFeed(
         const available: string[] = [];
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {
-            if (userPlatformTmdbIds.includes(p.provider_id)) {
-              available.push(p.provider_name);
-            }
+            if (userPlatformTmdbIds.includes(p.provider_id)) available.push(p.provider_name);
           }
         }
         return { movie, platforms: [...new Set(available)] };
@@ -115,12 +90,9 @@ export async function buildFeed(
     })
   );
 
-  const onUserPlatforms = withProviders.filter((c) => c.platforms.length > 0);
-  const candidates = onUserPlatforms.slice(0, 30);
-
+  const candidates = withProviders.filter((c) => c.platforms.length > 0).slice(0, 30);
   if (candidates.length === 0) return [];
 
-  // Rank with Gemini (or fall back to vote_average sort)
   let ranked: RankedRecommendation[];
   if (tasteProfile) {
     ranked = await rankRecommendations(
@@ -145,31 +117,15 @@ export async function buildFeed(
     }));
   }
 
-  // Build final feed items with scores
   const feedItems: FeedItem[] = [];
   for (const rec of ranked) {
     const candidate = candidates.find((c) => c.movie.id === rec.tmdb_id);
     if (!candidate) continue;
-
     const m = candidate.movie;
     const year = (m.release_date ?? "").slice(0, 4);
-
-    const scores = await getScores(
-      m.id,
-      "movie",
-      m.title,
-      year,
-      m.vote_average,
-      m.vote_count,
-      m.popularity,
-      m.release_date ?? null
-    );
-
+    const scores = await getScores(m.id, "movie", m.title, year, m.vote_average, m.vote_count, m.popularity, m.release_date ?? null);
     feedItems.push({
-      tmdbId: m.id,
-      tmdbType: "movie",
-      title: m.title,
-      year,
+      tmdbId: m.id, tmdbType: "movie", title: m.title, year,
       posterUrl: posterUrl(m.poster_path, "w342"),
       overview: m.overview ?? "",
       originalLanguage: m.original_language,
@@ -182,10 +138,79 @@ export async function buildFeed(
       scoreTooltip: scores.tooltipLines,
       whyYoullLikeThis: rec.why_youll_like_this,
       rank: rec.rank,
-      // Mark if in watchlist
-      ...( watchlistIds.has(m.id) ? {} : {} ),
     });
+    void watchlistIds; // used for reference elsewhere
   }
 
   return feedItems.sort((a, b) => a.rank - b.rank);
+}
+
+export async function buildMoreFeed(
+  userId: string,
+  userPlatformTmdbIds: number[],
+  region: string,
+  seenIds: number[],
+  page: number
+): Promise<FeedItem[]> {
+  const seenSet = new Set(seenIds);
+  const dismissedRows = await db.select({ tmdbId: dismissedItems.tmdbId }).from(dismissedItems).where(eq(dismissedItems.userId, userId));
+  const dismissedIds = new Set(dismissedRows.map((r) => r.tmdbId));
+
+  const strategies: Record<string, string>[] = [
+    { sort_by: "vote_average.desc", "vote_count.gte": "500" },
+    { sort_by: "popularity.desc" },
+    { sort_by: "vote_average.desc", "vote_count.gte": "200", "primary_release_date.lte": `${new Date().getFullYear() - 5}-12-31` },
+    { sort_by: "primary_release_date.desc", "vote_average.gte": "6.5" },
+  ];
+  const strategy = strategies[(page - 2) % strategies.length];
+  const tmdbPage = Math.ceil((page - 1) / strategies.length) + 1;
+
+  let candidates: TmdbMovie[] = [];
+  try {
+    const result = await discoverMovies({ ...strategy, page: String(tmdbPage) });
+    candidates = (result.results ?? []).filter((m) => !seenSet.has(m.id) && !dismissedIds.has(m.id));
+  } catch {
+    return [];
+  }
+
+  const withProviders = await Promise.all(
+    candidates.slice(0, 40).map(async (movie) => {
+      try {
+        const providers = await getWatchProviders(movie.id, "movie", region);
+        const available: string[] = [];
+        for (const type of ACCESSIBLE_PROVIDER_TYPES) {
+          for (const p of providers[type] ?? []) {
+            if (userPlatformTmdbIds.includes(p.provider_id)) available.push(p.provider_name);
+          }
+        }
+        return { movie, platforms: [...new Set(available)] };
+      } catch {
+        return { movie, platforms: [] };
+      }
+    })
+  );
+
+  const onPlatforms = withProviders.filter((c) => c.platforms.length > 0).slice(0, 12);
+  const feedItems: FeedItem[] = [];
+  for (const { movie: m, platforms } of onPlatforms) {
+    const year = (m.release_date ?? "").slice(0, 4);
+    const scores = await getScores(m.id, "movie", m.title, year, m.vote_average, m.vote_count, m.popularity, m.release_date ?? null);
+    feedItems.push({
+      tmdbId: m.id, tmdbType: "movie", title: m.title, year,
+      posterUrl: posterUrl(m.poster_path, "w342"),
+      overview: m.overview ?? "",
+      originalLanguage: m.original_language,
+      platforms,
+      audienceScore: scores.audienceScore,
+      criticsScore: scores.criticsScore,
+      cinemaScore: scores.cinemaScore,
+      voteCount: scores.voteCount,
+      ribbon: scores.ribbon,
+      scoreTooltip: scores.tooltipLines,
+      whyYoullLikeThis: "",
+      rank: 999,
+    });
+  }
+
+  return feedItems.sort((a, b) => (b.audienceScore ?? 0) - (a.audienceScore ?? 0));
 }

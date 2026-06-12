@@ -1,5 +1,4 @@
-import { NextRequest } from "next/server";
-import { getOrCreateUser, getUserIdFromRequest } from "@/lib/auth";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ratings, tasteProfile } from "@/lib/schema";
 import { eq } from "drizzle-orm";
@@ -7,11 +6,12 @@ import { generateTasteProfile } from "@/lib/gemini";
 
 const REGEN_COOLDOWN_MS = 5 * 60 * 1000;
 
-export async function POST(request: NextRequest) {
-  const user = await getOrCreateUser();
+export async function POST() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Cooldown check
-  const existing = db.select().from(tasteProfile).where(eq(tasteProfile.userId, user.id)).get();
+  const [existing] = await db.select().from(tasteProfile).where(eq(tasteProfile.userId, userId)).limit(1);
   if (existing?.lastGeneratedAt) {
     const age = Date.now() - new Date(existing.lastGeneratedAt).getTime();
     if (age < REGEN_COOLDOWN_MS) {
@@ -19,29 +19,17 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const allRatings = db.select().from(ratings).where(eq(ratings.userId, user.id)).all();
-
-  if (allRatings.length < 3) {
-    return Response.json({ error: "Rate at least 3 movies first" }, { status: 400 });
-  }
+  const allRatings = await db.select().from(ratings).where(eq(ratings.userId, userId));
+  if (allRatings.length < 3) return Response.json({ error: "Rate at least 3 movies first" }, { status: 400 });
 
   const result = await generateTasteProfile(
-    allRatings.map((r) => ({
-      title: r.title,
-      year: "",
-      rating: r.rating,
-      notes: r.notes,
-      genres: [],
-    }))
+    allRatings.map((r) => ({ title: r.title, year: "", rating: r.rating, notes: r.notes, genres: [] }))
   );
-
-  if (!result) {
-    return Response.json({ error: "Could not generate profile. Try again later." }, { status: 503 });
-  }
+  if (!result) return Response.json({ error: "Could not generate profile. Try again later." }, { status: 503 });
 
   const now = new Date();
   if (existing) {
-    db.update(tasteProfile).set({
+    await db.update(tasteProfile).set({
       topThemes: JSON.stringify(result.top_themes),
       avoidThemes: JSON.stringify(result.avoid_themes),
       favDirectors: JSON.stringify(result.fav_directors),
@@ -49,10 +37,10 @@ export async function POST(request: NextRequest) {
       toneDescription: result.tone_description,
       recommendationStrategy: result.recommendation_strategy,
       lastGeneratedAt: now,
-    }).where(eq(tasteProfile.userId, user.id)).run();
+    }).where(eq(tasteProfile.userId, userId));
   } else {
-    db.insert(tasteProfile).values({
-      userId: user.id,
+    await db.insert(tasteProfile).values({
+      userId,
       topThemes: JSON.stringify(result.top_themes),
       avoidThemes: JSON.stringify(result.avoid_themes),
       favDirectors: JSON.stringify(result.fav_directors),
@@ -60,17 +48,18 @@ export async function POST(request: NextRequest) {
       toneDescription: result.tone_description,
       recommendationStrategy: result.recommendation_strategy,
       lastGeneratedAt: now,
-    }).run();
+    });
   }
 
   return Response.json({ profile: result });
 }
 
-export async function GET(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
+export async function GET() {
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) return Response.json({ profile: null });
 
-  const profile = db.select().from(tasteProfile).where(eq(tasteProfile.userId, userId)).get();
+  const [profile] = await db.select().from(tasteProfile).where(eq(tasteProfile.userId, userId)).limit(1);
   if (!profile?.topThemes) return Response.json({ profile: null });
 
   return Response.json({

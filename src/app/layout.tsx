@@ -3,6 +3,8 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AdScripts } from "@/components/ads/AdScripts";
+import { ConsentBanner } from "@/components/ads/ConsentBanner";
 
 const geist = Geist({ variable: "--font-sans", subsets: ["latin"] });
 
@@ -24,6 +26,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background text-foreground antialiased">
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster theme="dark" position="top-center" />
+        <ConsentBanner />
+        <AdScripts />
       </body>
     </html>
   );

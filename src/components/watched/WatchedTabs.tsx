@@ -18,7 +18,7 @@ interface Rated {
   rating: number;
   notes: string | null;
   watchStatus: string;
-  createdAt: Date;
+  createdAt: Date | null;
 }
 
 interface WatchlistItem {
@@ -26,7 +26,7 @@ interface WatchlistItem {
   tmdbId: number;
   title: string;
   posterPath: string | null;
-  addedAt: Date;
+  addedAt: Date | null;
 }
 
 interface Props {

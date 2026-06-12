@@ -2,13 +2,16 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+// Note: gemini-1.5-* models are retired (404), and 2.5-pro has no free-tier
+// quota (429). gemini-2.5-flash is current and available on the free key, so
+// both slots use it. Swap `pro` to "gemini-2.5-pro" if a paid key is set.
 const flash = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
+  model: "gemini-2.5-flash",
   generationConfig: { responseMimeType: "application/json" },
 });
 
 const pro = genAI.getGenerativeModel({
-  model: "gemini-1.5-pro",
+  model: "gemini-2.5-flash",
   generationConfig: { responseMimeType: "application/json" },
 });
 

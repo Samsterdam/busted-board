@@ -1,44 +1,43 @@
-import { NextRequest } from "next/server";
-import { getOrCreateUser, getUserIdFromRequest } from "@/lib/auth";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { vibeTags } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
+export async function GET() {
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) return Response.json({ tags: [] });
 
-  const tags = db.select().from(vibeTags).where(eq(vibeTags.userId, userId)).all();
+  const tags = await db.select().from(vibeTags).where(eq(vibeTags.userId, userId));
   return Response.json({ tags: tags.map((t) => t.tag) });
 }
 
-export async function POST(request: NextRequest) {
-  const user = await getOrCreateUser();
-  const { tags } = await request.json() as { tags: string[] };
+export async function POST(request: Request) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { tags } = await request.json() as { tags: string[] };
   if (!Array.isArray(tags)) return Response.json({ error: "tags must be array" }, { status: 400 });
 
   for (const tag of tags) {
     if (typeof tag !== "string" || !tag.trim()) continue;
-    db.insert(vibeTags)
-      .values({ userId: user.id, tag: tag.trim() })
-      .onConflictDoNothing()
-      .run();
+    await db.insert(vibeTags).values({ userId, tag: tag.trim() }).onConflictDoNothing();
   }
 
   return Response.json({ ok: true });
 }
 
-export async function DELETE(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
-  if (!userId) return Response.json({ error: "No session" }, { status: 401 });
+export async function DELETE(request: Request) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { tag } = await request.json() as { tag: string };
-  const tags = db.select().from(vibeTags).where(eq(vibeTags.userId, userId)).all();
-  const match = tags.find((t) => t.tag === tag);
+  const existing = await db.select().from(vibeTags).where(eq(vibeTags.userId, userId));
+  const match = existing.find((t) => t.tag === tag);
   if (match) {
-    db.delete(vibeTags).where(eq(vibeTags.id, match.id)).run();
+    await db.delete(vibeTags).where(eq(vibeTags.id, match.id));
   }
-
   return Response.json({ ok: true });
 }
