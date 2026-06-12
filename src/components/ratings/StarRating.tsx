@@ -21,27 +21,43 @@ export function StarRating({ value, onChange, size = "md", readOnly = false }: P
       role={readOnly ? "img" : "radiogroup"}
       aria-label={`Rating: ${value} out of 5 stars`}
     >
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          role={readOnly ? undefined : "radio"}
-          aria-checked={readOnly ? undefined : value === star}
-          aria-label={`${star} star${star !== 1 ? "s" : ""}`}
-          disabled={readOnly}
-          onClick={readOnly ? undefined : () => onChange(star)}
-          onMouseEnter={readOnly ? undefined : () => setHovered(star)}
-          onMouseLeave={readOnly ? undefined : () => setHovered(0)}
-          className={`transition-colors ${readOnly ? "cursor-default" : "cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"}`}
-        >
+      {[1, 2, 3, 4, 5].map((star) => {
+        const icon = (
           <Star
             className={`${iconSize} transition-colors ${
               star <= display ? "fill-primary stroke-primary" : "fill-none stroke-muted-foreground"
             }`}
             aria-hidden="true"
           />
-        </button>
-      ))}
+        );
+
+        // ReadOnly stars are non-interactive, so render plain spans — a <button>
+        // here would nest illegally when StarRating sits inside another button
+        // (e.g. a TooltipTrigger).
+        if (readOnly) {
+          return (
+            <span key={star} className="transition-colors cursor-default">
+              {icon}
+            </span>
+          );
+        }
+
+        return (
+          <button
+            key={star}
+            type="button"
+            role="radio"
+            aria-checked={value === star}
+            aria-label={`${star} star${star !== 1 ? "s" : ""}`}
+            onClick={() => onChange(star)}
+            onMouseEnter={() => setHovered(star)}
+            onMouseLeave={() => setHovered(0)}
+            className="transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            {icon}
+          </button>
+        );
+      })}
     </div>
   );
 }
