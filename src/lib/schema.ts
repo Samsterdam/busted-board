@@ -7,6 +7,8 @@ import {
   timestamp,
   serial,
   primaryKey,
+  unique,
+  index,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
@@ -162,3 +164,63 @@ export const importHistory = pgTable("import_history", {
   rowsImported: integer("rows_imported").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// --- Normalized streaming-availability model -------------------------------
+// A relational view of "what media is on which platform, where", sitting
+// alongside the denormalized `media_availability` JSON cache above. The cache
+// stays the fast read path; these tables answer relational queries the blob
+// can't (e.g. "all media on platform X in region Y"). Populated best-effort
+// from `getCachedWatchProviders` on each 24h cache refresh — no extra TMDB
+// calls. `deep_link_url` is intentionally absent: TMDB exposes no per-platform
+// playback link.
+
+// The core media entity, decoupled from any platform instance. Keyed by
+// (tmdb_id, tmdb_type) because TMDB ids collide across movie/tv.
+export const media = pgTable(
+  "media",
+  {
+    id: serial("id").primaryKey(),
+    tmdbId: integer("tmdb_id").notNull(),
+    tmdbType: text("tmdb_type").notNull(),
+    title: text("title").notNull(),
+    releaseYear: integer("release_year"),
+    posterPath: text("poster_path"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [unique("media_tmdb_unique").on(t.tmdbId, t.tmdbType)]
+);
+
+// Streaming services. Self-populating: any provider TMDB returns is upserted by
+// `tmdbId` (the conflict target). `PLATFORM_REGISTRY` pre-seeds curated names/types.
+export const platforms = pgTable("platforms", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  tmdbId: integer("tmdb_id").unique(),
+  type: text("type").notNull().default("paid"),
+  iconUrl: text("icon_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Mapping: a media item is available on a platform in a region. The link set
+// for a (media, region) is replaced on each availability refresh (sync-on-refresh).
+export const mediaLinks = pgTable(
+  "media_links",
+  {
+    id: serial("id").primaryKey(),
+    mediaId: integer("media_id")
+      .notNull()
+      .references(() => media.id, { onDelete: "cascade" }),
+    platformId: integer("platform_id")
+      .notNull()
+      .references(() => platforms.id, { onDelete: "cascade" }),
+    region: text("region").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [
+    unique("media_links_unique").on(t.mediaId, t.platformId, t.region),
+    // Serves the target query ("media on platform X in region Y"); the unique
+    // index above leads with media_id and won't.
+    index("media_links_platform_region_idx").on(t.platformId, t.region),
+  ]
+);

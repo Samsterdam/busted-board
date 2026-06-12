@@ -58,7 +58,14 @@ export async function POST(request: Request) {
   const withAvailability = await Promise.all(
     results.slice(0, 20).map(async (r) => {
       try {
-        const providers = await getCachedWatchProviders(r.id, r.media_type, region);
+        const title = ("title" in r ? r.title : r.name) ?? "";
+        const dateStr = ("release_date" in r ? r.release_date : r.first_air_date) ?? "";
+        const releaseYear = dateStr ? Number(dateStr.slice(0, 4)) || null : null;
+        const providers = await getCachedWatchProviders(r.id, r.media_type, region, {
+          title,
+          releaseYear,
+          posterPath: r.poster_path ?? null,
+        });
         const available: string[] = [];
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {

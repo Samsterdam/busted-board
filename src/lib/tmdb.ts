@@ -28,6 +28,11 @@ export function posterUrl(path: string | null | undefined, size: "w342" | "w500"
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
 
+export function logoUrl(path: string | null | undefined, size: "w45" | "w92" | "original" = "w92"): string | null {
+  if (!path) return null;
+  return `${TMDB_IMAGE_BASE}/${size}${path}`;
+}
+
 export interface TmdbMovie {
   id: number;
   title: string;
