@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Migration drift check
+        # `drizzle-kit generate` only diffs schema.ts against the committed
+        # snapshot — no DB connection. If it produces any change under drizzle/
+        # (a new migration or an edited snapshot), the schema drifted from the
+        # committed migrations and must be regenerated + committed.
+        run: |
+          npm run db:generate
+          if [ -n "$(git status --porcelain drizzle/)" ]; then
+            echo "::error::Schema drift — run 'npm run db:generate' and commit the result."
+            git status --porcelain drizzle/
+            exit 1
+          fi
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        # Placeholder env only: a syntactically valid DATABASE_URL so the
+        # lazily-constructed neon() client doesn't throw at module load, and a
+        # dummy AUTH_SECRET for the NextAuth instances. No real secrets, no
+        # deploy — Vercel owns deploy.
+        env:
+          DATABASE_URL: postgres://user:pass@localhost:5432/db
+          AUTH_SECRET: ci-placeholder-not-a-real-secret
+        run: npm run build
