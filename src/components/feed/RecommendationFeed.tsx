@@ -1,25 +1,103 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { RefreshCw, Gem, LayoutGrid, Grid2x2, Rows3 } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
+import { RefreshCw, Gem, LayoutGrid, Grid2x2, Rows3, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { RecommendationCard } from "./RecommendationCard";
 import { MovieDetailModal } from "./MovieDetailModal";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { slotHasActiveProvider } from "@/lib/ads/registry";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { toast } from "sonner";
+
+const AD_INTERVAL = 8; // insert an ad band after every N cards (only when ads are on)
+
+// Whether a real ad provider owns the in-feed banner slot. When false (ads off),
+// the feed inserts no ad band at all — it just stays a uniform grid of movie
+// tiles. Flipping NEXT_PUBLIC_AD_PRIMARY to a provider turns the bands back on.
+const ADS_ACTIVE = slotHasActiveProvider("feed-banner");
+
+// The /api/recommendations/search endpoint returns a leaner item than the feed
+// (no rank/voteCount/scoreTooltip/etc). Coerce to a full FeedItem so search
+// results can reuse RecommendationCard and MovieDetailModal unchanged.
+function toFeedItem(r: Partial<FeedItem> & { tmdbId: number; tmdbType: "movie" | "tv"; title: string }): FeedItem {
+  return {
+    tmdbId: r.tmdbId,
+    tmdbType: r.tmdbType,
+    title: r.title,
+    year: r.year ?? "",
+    posterUrl: r.posterUrl ?? null,
+    overview: r.overview ?? "",
+    originalLanguage: r.originalLanguage ?? "",
+    platforms: r.platforms ?? [],
+    platformIds: r.platformIds ?? [],
+    audienceScore: r.audienceScore ?? null,
+    criticsScore: r.criticsScore ?? null,
+    cinemaScore: r.cinemaScore ?? null,
+    voteCount: r.voteCount ?? null,
+    ribbon: r.ribbon ?? null,
+    scoreTooltip: r.scoreTooltip ?? [],
+    whyYoullLikeThis: r.whyYoullLikeThis ?? "",
+    rank: r.rank ?? 0,
+  };
+}
 
 interface Props {
   userId: string;
   ratingCount: number;
-  platformNames: string[];
+  platforms: { name: string; tmdbId: number }[];
 }
 
-export function RecommendationFeed({ userId, ratingCount, platformNames }: Props) {
+export function RecommendationFeed({ userId, ratingCount, platforms }: Props) {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [gemsOnly, setGemsOnly] = useState(false);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<number>>(new Set());
+
+  // Search: null = browsing the feed; an array (possibly empty) = showing results.
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<FeedItem[] | null>(null);
+  const [searchExplanation, setSearchExplanation] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  async function runSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q || searching) return;
+    setSearching(true);
+    try {
+      const res = await fetch("/api/recommendations/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      });
+      const data = await res.json();
+      if (data.error) { toast.error(data.error); return; }
+      setSearchResults((data.results ?? []).map(toFeedItem));
+      setSearchExplanation(data.explanation ?? null);
+    } catch {
+      toast.error("Search failed. Please try again.");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function clearSearch() {
+    setSearchQuery("");
+    setSearchResults(null);
+    setSearchExplanation(null);
+  }
+
+  function togglePlatform(tmdbId: number) {
+    setSelectedPlatforms((prev) => {
+      const next = new Set(prev);
+      if (next.has(tmdbId)) next.delete(tmdbId);
+      else next.add(tmdbId);
+      return next;
+    });
+  }
   const [cardSize, setCardSize] = useState<"sm" | "md" | "lg">(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("bb_card_size") as "sm" | "md" | "lg") ?? "sm";
@@ -145,7 +223,16 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
     toast.success(inList ? "Removed from watchlist" : "Added to watchlist");
   }
 
-  const displayed = gemsOnly ? feed.filter((i) => i.ribbon === "gem") : feed;
+  const displayed = feed.filter((i) => {
+    if (gemsOnly && i.ribbon !== "gem") return false;
+    if (selectedPlatforms.size > 0 && !(i.platformIds ?? []).some((id) => selectedPlatforms.has(id))) return false;
+    return true;
+  });
+
+  // When a search is active, results take over the grid; the feed (and its
+  // gem/platform filters) is set aside until the user clears the search.
+  const inSearchMode = searchResults !== null;
+  const items = inSearchMode ? searchResults : displayed;
 
   if (loading) return <FeedSkeleton />;
 
@@ -162,7 +249,7 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
     <div className="px-4 py-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h1 className="text-xl font-semibold">Busted Board</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Busted Board</h1>
         <div className="flex gap-2">
           <Button
             variant="ghost"
@@ -198,29 +285,95 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
         </div>
       </div>
 
-      {/* Platform chips */}
-      {platformNames.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4" aria-label="Your streaming services">
-          {platformNames.slice(0, 4).map((p) => (
-            <span key={p} className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
-              {p}
-            </span>
-          ))}
-          {platformNames.length > 4 && (
-            <span className="text-xs text-muted-foreground self-center">+{platformNames.length - 4} more</span>
+      {/* Search */}
+      <form onSubmit={runSearch} className="relative mb-3">
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <Input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by title or vibe — e.g. “feel-good 90s sci-fi”"
+          aria-label="Search for something to watch"
+          className="pl-9 pr-20"
+        />
+        <Button
+          type="submit"
+          size="sm"
+          disabled={searching || !searchQuery.trim()}
+          className="absolute right-1 top-1/2 -translate-y-1/2 h-7"
+        >
+          {searching ? "…" : "Search"}
+        </Button>
+      </form>
+
+      {/* Search results header */}
+      {inSearchMode && (
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <p className="min-w-0 text-sm text-muted-foreground">
+            {searchExplanation || "Search results"}
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearSearch}
+            className="shrink-0 text-muted-foreground"
+          >
+            <X className="h-4 w-4 mr-1" aria-hidden="true" /> Clear
+          </Button>
+        </div>
+      )}
+
+      {/* Platform filter chips */}
+      {!inSearchMode && platforms.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-4" role="group" aria-label="Filter by streaming service">
+          {platforms.map((p) => {
+            const active = selectedPlatforms.has(p.tmdbId);
+            return (
+              <button
+                key={p.tmdbId}
+                type="button"
+                onClick={() => togglePlatform(p.tmdbId)}
+                aria-pressed={active}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p.name}
+              </button>
+            );
+          })}
+          {selectedPlatforms.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setSelectedPlatforms(new Set())}
+              className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Clear
+            </button>
           )}
         </div>
       )}
 
-      {staleWarning && (
+      {!inSearchMode && staleWarning && (
         <p className="mb-3 text-xs text-amber-400 bg-amber-900/20 rounded px-3 py-2" role="alert">
           {staleWarning} — showing cached results.
         </p>
       )}
 
-      {displayed.length === 0 && (
+      {items.length === 0 && (
         <p className="text-center text-muted-foreground py-12">
-          {gemsOnly ? "No hidden gems found on your platforms right now." : "No recommendations found."}
+          {inSearchMode
+            ? "No matches found. Try a different search."
+            : selectedPlatforms.size > 0
+            ? "No loaded recommendations on the selected service(s). Try clearing the filter or scroll to load more."
+            : gemsOnly
+            ? "No hidden gems found on your platforms right now."
+            : "No recommendations found."}
         </p>
       )}
 
@@ -228,33 +381,37 @@ export function RecommendationFeed({ userId, ratingCount, platformNames }: Props
       <div
         className={GRID_CLASSES[cardSize]}
         role="list"
-        aria-label="Recommendations"
+        aria-label={inSearchMode ? "Search results" : "Recommendations"}
       >
-        {displayed.map((item, index) => (
-          <>
-            <div key={item.tmdbId} role="listitem">
-              <RecommendationCard
-                item={item}
-                userRating={userRatings[item.tmdbId]}
-                inWatchlist={watchlistIds.has(item.tmdbId)}
-                onClick={() => setSelectedItem(item)}
-                onRate={() => setSelectedItem(item)}
-                onDismiss={() => handleDismiss(item)}
-                onWatchlist={() => handleWatchlist(item)}
-              />
-            </div>
-            {/* Insert ad after every 8 items */}
-            {(index + 1) % 8 === 0 && (
-              <div key={`ad-${index}`} className="col-span-2 sm:col-span-3 lg:col-span-4">
-                <AdBanner />
+        {items.map((item, index) => {
+          const showAd = ADS_ACTIVE && (index + 1) % AD_INTERVAL === 0;
+          return (
+            <Fragment key={item.tmdbId}>
+              <div role="listitem">
+                <RecommendationCard
+                  item={item}
+                  userRating={userRatings[item.tmdbId]}
+                  inWatchlist={watchlistIds.has(item.tmdbId)}
+                  onClick={() => setSelectedItem(item)}
+                  onRate={() => setSelectedItem(item)}
+                  onDismiss={() => handleDismiss(item)}
+                  onWatchlist={() => handleWatchlist(item)}
+                />
               </div>
-            )}
-          </>
-        ))}
+              {/* Ad band every N cards — only when ads are on. Off → nothing
+                  here, so the feed is just more movie tiles. */}
+              {showAd && (
+                <div className="col-span-2 sm:col-span-3 lg:col-span-4">
+                  <AdBanner />
+                </div>
+              )}
+            </Fragment>
+          );
+        })}
       </div>
 
-      {/* Infinite scroll sentinel */}
-      {hasMore && (
+      {/* Infinite scroll sentinel — feed only; search results aren't paginated */}
+      {hasMore && !inSearchMode && (
         <div ref={sentinelRef} className="py-4 flex justify-center">
           {loadingMore && (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 w-full">

@@ -21,6 +21,7 @@ export interface FeedItem {
   overview: string;
   originalLanguage: string;
   platforms: string[];
+  platformIds: number[];
   audienceScore: number | null;
   criticsScore: number | null;
   cinemaScore: number | null;
@@ -81,15 +82,15 @@ export async function buildFeed(
           releaseYear: movie.release_date ? Number(movie.release_date.slice(0, 4)) || null : null,
           posterPath: movie.poster_path,
         });
-        const available: string[] = [];
+        const byId = new Map<number, string>();
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {
-            if (userPlatformTmdbIds.includes(p.provider_id)) available.push(p.provider_name);
+            if (userPlatformTmdbIds.includes(p.provider_id)) byId.set(p.provider_id, p.provider_name);
           }
         }
-        return { movie, platforms: [...new Set(available)] };
+        return { movie, platforms: [...byId.values()], platformIds: [...byId.keys()] };
       } catch {
-        return { movie, platforms: [] };
+        return { movie, platforms: [], platformIds: [] };
       }
     })
   );
@@ -134,6 +135,7 @@ export async function buildFeed(
       overview: m.overview ?? "",
       originalLanguage: m.original_language,
       platforms: candidate.platforms,
+      platformIds: candidate.platformIds,
       audienceScore: scores.audienceScore,
       criticsScore: scores.criticsScore,
       cinemaScore: scores.cinemaScore,
@@ -185,22 +187,22 @@ export async function buildMoreFeed(
           releaseYear: movie.release_date ? Number(movie.release_date.slice(0, 4)) || null : null,
           posterPath: movie.poster_path,
         });
-        const available: string[] = [];
+        const byId = new Map<number, string>();
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {
-            if (userPlatformTmdbIds.includes(p.provider_id)) available.push(p.provider_name);
+            if (userPlatformTmdbIds.includes(p.provider_id)) byId.set(p.provider_id, p.provider_name);
           }
         }
-        return { movie, platforms: [...new Set(available)] };
+        return { movie, platforms: [...byId.values()], platformIds: [...byId.keys()] };
       } catch {
-        return { movie, platforms: [] };
+        return { movie, platforms: [], platformIds: [] };
       }
     })
   );
 
   const onPlatforms = withProviders.filter((c) => c.platforms.length > 0).slice(0, 12);
   const feedItems: FeedItem[] = [];
-  for (const { movie: m, platforms } of onPlatforms) {
+  for (const { movie: m, platforms, platformIds } of onPlatforms) {
     const year = (m.release_date ?? "").slice(0, 4);
     const scores = await getScores(m.id, "movie", m.title, year, m.vote_average, m.vote_count, m.popularity, m.release_date ?? null);
     feedItems.push({
@@ -209,6 +211,7 @@ export async function buildMoreFeed(
       overview: m.overview ?? "",
       originalLanguage: m.original_language,
       platforms,
+      platformIds,
       audienceScore: scores.audienceScore,
       criticsScore: scores.criticsScore,
       cinemaScore: scores.cinemaScore,

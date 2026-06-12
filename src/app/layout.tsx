@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={geist.variable}>
+    <html lang="en" className={geist.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster theme="dark" position="top-center" />

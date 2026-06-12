@@ -70,16 +70,17 @@ export function AdSlot({ name, className = "" }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed, name]);
 
-  // Dev placeholder so layout is visible without live ads.
-  if (process.env.NODE_ENV === "development") {
+  // Dev placeholder so layout is visible while building out ad slots — but only
+  // when a provider actually owns this slot. With ads off/unconfigured we render
+  // nothing, so the app looks exactly as it will in production.
+  if (process.env.NODE_ENV === "development" && resolved) {
     return (
       <div
         className={`flex min-h-[50px] items-center justify-center rounded border border-dashed border-border bg-secondary text-xs text-muted-foreground ${className}`}
         role="presentation"
         aria-hidden="true"
       >
-        Ad slot · {name}
-        {resolved ? ` · ${resolved.provider.name}` : " · unconfigured"}
+        Ad slot · {name} · {resolved.provider.name}
       </div>
     );
   }

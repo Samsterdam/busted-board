@@ -1,4 +1,4 @@
-import type { AdProvider, ResolvedAdConfig } from "./types";
+import type { AdProvider, AdSlotName, ResolvedAdConfig } from "./types";
 import { AD_ENV, type AdEnv } from "./env";
 import { requireConsent } from "./consent";
 
@@ -77,4 +77,16 @@ export function resolveAdConfig(env: AdEnv = AD_ENV): ResolvedAdConfig {
 export function activeProviders(env: AdEnv = AD_ENV): AdProvider[] {
   const { primary, secondary } = resolveAdConfig(env);
   return primary ? [primary, ...secondary] : secondary;
+}
+
+/**
+ * Whether any active provider actually renders into the given slot. Lets the UI
+ * skip reserving ad space entirely when ads are off, so the layout shows normal
+ * content instead of an empty band.
+ */
+export function slotHasActiveProvider(name: AdSlotName, env: AdEnv = AD_ENV): boolean {
+  return activeProviders(env).some((p) => {
+    const spec = p.getSlotSpec(name, env);
+    return spec != null && spec.kind !== "none";
+  });
 }
