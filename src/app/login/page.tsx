@@ -2,11 +2,25 @@ import { signIn } from "@/auth";
 
 export const metadata = { title: "Sign In — Busted Board" };
 
-export default function LoginPage({
+// NextAuth redirects here with `?error=<code>` (see `pages.error` in auth.config).
+const ERROR_MESSAGES: Record<string, string> = {
+  Configuration: "Sign-in is misconfigured. Please try again later.",
+  AccessDenied: "Access was denied. You may not have permission to sign in.",
+  Verification: "That sign-in link has expired or was already used.",
+  OAuthAccountNotLinked:
+    "This email is already linked to a different sign-in method.",
+};
+
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  const { error } = await searchParams;
+  const errorMessage = error
+    ? (ERROR_MESSAGES[error] ?? "Something went wrong signing in. Please try again.")
+    : null;
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-6">
       <div className="text-center">
@@ -15,6 +29,14 @@ export default function LoginPage({
       </div>
 
       <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 space-y-4">
+        {errorMessage && (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {errorMessage}
+          </p>
+        )}
         <form
           action={async () => {
             "use server";
