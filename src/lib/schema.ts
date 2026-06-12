@@ -140,6 +140,19 @@ export const scoresCache = pgTable("scores_cache", {
   fetchedAt: timestamp("fetched_at").defaultNow(),
 });
 
+// Shared (not per-user) streaming-availability cache, keyed by title + region.
+// "What's streaming where" is the same for everyone in a region, so it's fetched
+// from TMDB once and reused across all users — important now that the app is
+// multi-user. `providers` holds the JSON-serialized TMDB WatchProviders slice.
+export const mediaAvailability = pgTable("media_availability", {
+  id: serial("id").primaryKey(),
+  tmdbId: integer("tmdb_id").notNull(),
+  tmdbType: text("tmdb_type").notNull(),
+  region: text("region").notNull(),
+  providers: text("providers").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+});
+
 export const importHistory = pgTable("import_history", {
   id: serial("id").primaryKey(),
   userId: text("user_id")

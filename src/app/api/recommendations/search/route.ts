@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { tasteProfile, userPlatforms, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { interpretSearchQuery } from "@/lib/gemini";
-import { discoverMovies, searchMulti, getWatchProviders, posterUrl } from "@/lib/tmdb";
+import { discoverMovies, searchMulti, posterUrl } from "@/lib/tmdb";
+import { getCachedWatchProviders } from "@/lib/availability";
 import { getScores } from "@/lib/scores";
 import { PLATFORM_REGISTRY, ACCESSIBLE_PROVIDER_TYPES } from "@/lib/platforms";
 
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   const withAvailability = await Promise.all(
     results.slice(0, 20).map(async (r) => {
       try {
-        const providers = await getWatchProviders(r.id, r.media_type, region);
+        const providers = await getCachedWatchProviders(r.id, r.media_type, region);
         const available: string[] = [];
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {

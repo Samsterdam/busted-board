@@ -1,12 +1,12 @@
 import {
   discoverMovies,
   getTrendingMovies,
-  getWatchProviders,
   posterUrl,
   type TmdbMovie,
 } from "./tmdb";
 import { rankRecommendations, type TasteProfileResult, type RankedRecommendation } from "./gemini";
 import { getScores } from "./scores";
+import { getCachedWatchProviders } from "./availability";
 import { db } from "./db";
 import { ratings, dismissedItems, watchlist } from "./schema";
 import { eq } from "drizzle-orm";
@@ -76,7 +76,7 @@ export async function buildFeed(
   const withProviders = await Promise.all(
     filtered.slice(0, 60).map(async (movie) => {
       try {
-        const providers = await getWatchProviders(movie.id, "movie", region);
+        const providers = await getCachedWatchProviders(movie.id, "movie", region);
         const available: string[] = [];
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {
@@ -176,7 +176,7 @@ export async function buildMoreFeed(
   const withProviders = await Promise.all(
     candidates.slice(0, 40).map(async (movie) => {
       try {
-        const providers = await getWatchProviders(movie.id, "movie", region);
+        const providers = await getCachedWatchProviders(movie.id, "movie", region);
         const available: string[] = [];
         for (const type of ACCESSIBLE_PROVIDER_TYPES) {
           for (const p of providers[type] ?? []) {
