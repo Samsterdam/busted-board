@@ -20,3 +20,16 @@ No magic values in code. Every literal that carries meaning must come from a nam
 - **One-off literals** are allowed *only* when self-evident from context (e.g. `index + 1`, `array.length === 0`, an `aria-hidden="true"`). When in doubt, name it.
 - Design tokens (colors, spacing, typography, radii) come from the design system / theme — do not hand-code hex values or pixel spacing in components.
 - A literal that needs a comment to explain what it means should be a named constant whose name *is* the explanation.
+- **Where shared constants live:** `src/lib/config/` — domain-split, dependency-free modules (`ads.ts`, `durations.ts`, `scoring.ts`, `feed.ts`, `ratings.ts`). `no-magic-numbers` is turned off there because naming literals is their job. Import from these instead of inlining. Genuinely single-use, file-local presentational counts may be a local `const NAME = <n>` at the top of the file instead.
+
+## Enforcement & local setup
+
+These rules are enforced mechanically — they are not just style guidance.
+
+- **ESLint gate** (`eslint.config.mjs`, run via `npm run lint`):
+  - `max-lines` → **error at 500 raw lines** (the hard limit), project-wide. The 300 soft limit stays advisory (one rule can only gate one threshold) — split proactively as you approach it.
+  - `@typescript-eslint/no-magic-numbers` → **error** in `src/**`. Numbers in object-property position (`{ status: 401 }`) and lone `const NAME = <n>` initializers are allowed; literals in expressions/arguments/arrays are not. `src/lib/config/**` and `*.test.*` are exempt.
+- **Pre-commit hook** (husky + lint-staged): auto-installs on `npm install` (via the `prepare` script). It runs ESLint on staged `*.{ts,tsx}` (errors block the commit) and then a gitleaks secret scan.
+- **Secret scanning** (gitleaks): the hook warns-but-skips if the `gitleaks` binary isn't installed locally; **CI enforces it hard**. Install it locally with `winget install gitleaks` (or `scoop install gitleaks` / `brew install gitleaks`).
+  - **False positive?** Add the path/regex to `.gitleaks.toml`'s `[allowlist]`, or put an inline `gitleaks:allow` comment on the offending line.
+- **CI** (`.github/workflows/ci.yml`): typecheck → lint (the gate above) → migration-drift → test → build, plus a separate `secret-scan` job running gitleaks over full history.
