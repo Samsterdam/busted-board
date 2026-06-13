@@ -54,3 +54,18 @@ jobs:
           DATABASE_URL: postgres://user:pass@localhost:5432/db
           AUTH_SECRET: ci-placeholder-not-a-real-secret
         run: npm run build
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks scans the commit range, so it needs full history — the
+          # default shallow checkout (depth 1) would miss earlier commits.
+          fetch-depth: 0
+
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
