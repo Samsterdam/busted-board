@@ -7,6 +7,7 @@ import { discoverMovies, searchMulti, posterUrl, getSimilarTitles, type TmdbMovi
 import { getCachedWatchProviders } from "@/lib/availability";
 import { getScores } from "@/lib/scores";
 import { PLATFORM_REGISTRY, ACCESSIBLE_PROVIDER_TYPES } from "@/lib/platforms";
+import { genreNamesToIds } from "@/lib/collections";
 import { SEARCH_PROVIDER_LOOKUP_LIMIT, SEARCH_RESULT_LIMIT, YEAR_PREFIX_LENGTH } from "@/lib/config/feed";
 import { SEARCH_MIN_VOTE_AVG_DEFAULT } from "@/lib/config/scoring";
 
@@ -43,12 +44,7 @@ export async function POST(request: Request) {
     const res = await searchMulti(interpretation.search_term);
     results = (res.results ?? []).filter((r) => r.media_type === "movie" || r.media_type === "tv");
   } else {
-    const genreMap: Record<string, number> = {
-      Action: 28, Adventure: 12, Animation: 16, Comedy: 35, Crime: 80,
-      Documentary: 99, Drama: 18, Fantasy: 14, Horror: 27, Mystery: 9648,
-      Romance: 10749, "Science Fiction": 878, Thriller: 53,
-    };
-    const genreIds = interpretation.genres.map((g) => genreMap[g]).filter(Boolean).join(",");
+    const genreIds = genreNamesToIds(interpretation.genres, "movie");
     const res = await discoverMovies({
       sort_by: interpretation.sort_by || "popularity.desc",
       "vote_average.gte": String(interpretation.min_vote_average || SEARCH_MIN_VOTE_AVG_DEFAULT),
