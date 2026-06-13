@@ -1,9 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { env } from "./env";
 import { GEMINI_RETRY_BACKOFF_MS } from "./config/durations";
 import { MIN_RATINGS_FOR_PROFILE } from "./config/ratings";
 import { FALLBACK_RANK_LIMIT } from "./config/feed";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 
 // Note: gemini-1.5-* models are retired (404), and 2.5-pro has no free-tier
 // quota (429). gemini-2.5-flash is current and available on the free key, so

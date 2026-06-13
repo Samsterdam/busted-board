@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { scoresCache } from "./schema";
 import { eq, and } from "drizzle-orm";
+import { env } from "./env";
 import { SCORE_CACHE_TTL_MS, OMDB_TIMEOUT_MS } from "./config/durations";
 import {
   AUDIENCE_SCORE_SCALE,
@@ -80,7 +81,7 @@ function buildTooltip(
 }
 
 async function fetchOmdbScores(title: string, year: string): Promise<{ critics: number | null; awards: string | null }> {
-  const key = process.env.OMDB_API_KEY;
+  const key = env.OMDB_API_KEY;
   if (!key) return { critics: null, awards: null };
 
   const url = new URL(OMDB_BASE);

@@ -1,8 +1,9 @@
+import { env } from "./env";
+import { TMDB_TIMEOUT_MS } from "./config/durations";
+
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
-const API_KEY = process.env.TMDB_API_KEY!;
-
-const TIMEOUT_MS = 10_000;
+const API_KEY = env.TMDB_API_KEY;
 
 async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): Promise<T> {
   const url = new URL(`${TMDB_BASE}${path}`);
@@ -12,7 +13,7 @@ async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): 
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), TMDB_TIMEOUT_MS);
 
   try {
     const res = await fetch(url.toString(), { signal: controller.signal });
