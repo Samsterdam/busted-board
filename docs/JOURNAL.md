@@ -81,9 +81,22 @@ file-length / no-magic-values enforcement + cleanup. All on local `master`.
   verified by tsc/lint/tests (19 pass) but NOT by exercising the running app.
   Run it and confirm the feed, ad slot sizes, and score colors/ribbons are
   unchanged. (`npm run build` not yet run this session.)
-- **Tech-debt follow-ups (journal-noted, deferred):** unify the search route's
-  inline `enrich()` with the engine's `enrichToFeedItems()`; dedupe the inline
-  `genreMap` in the search route vs `MOVIE_GENRE_IDS` in `collections.ts`; the
-  duplicated `getCinemaScoreColor` (scores.ts vs ScoreDisplay) now at least shares
-  constants. Optional: split `recommendation-engine.ts` (302) under the soft 300;
-  consolidate scattered `process.env` API-key reads into one typed config module.
+### Done (later still, ~20:45 — safe tech-debt dedups)
+- `0d1f91b` refactor(search): replaced the inline `genreMap` (byte-identical to
+  `MOVIE_GENRE_IDS`) with the shared `genreNamesToIds()` helper.
+- `b6814eb` refactor: centralized the four scattered `process.env.X` secret reads
+  into a typed, server-only `src/lib/env.ts` (fulfills the AGENTS.md "secrets via
+  a single typed config module" rule); also wired tmdb.ts to the previously-unused
+  `TMDB_TIMEOUT_MS`. Build verified.
+
+### Next / open (deliberately NOT done — need a call or change behavior)
+- **`enrich()` (search route) vs `enrichToFeedItems()` (engine) are NOT a safe
+  dedup.** They diverge on purpose: search keeps off-platform results (annotating
+  availability) and returns a lean shape; the engine filters to on-platform and
+  returns full `FeedItem`s. Unifying would change search behavior — needs a design
+  decision, not a mechanical merge.
+- `getCinemaScoreColor` is still duplicated (scores.ts vs ScoreDisplay) but both
+  now use the shared threshold constants, so they can't drift on values — only on
+  the presentational color strings. Left as-is (marginal).
+- Soft-300: `recommendation-engine.ts` is 318. Per the split decision (hard-500
+  only), left advisory.
