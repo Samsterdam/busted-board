@@ -11,7 +11,7 @@ export default function Loading() {
         <div className="space-y-2">
           <div className="skeleton h-4 w-28 rounded" />
           <div className="flex gap-2">
-            {[1, 2, 3].map((i) => <div key={i} className="skeleton h-6 w-20 rounded-full" />)}
+            {Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton h-6 w-20 rounded-full" />)}
           </div>
         </div>
         <div className="space-y-2">
@@ -23,7 +23,7 @@ export default function Loading() {
         <div className="space-y-2">
           <div className="skeleton h-4 w-20 rounded" />
           <div className="flex gap-2">
-            {[1, 2, 3, 4].map((i) => <div key={i} className="skeleton h-6 w-16 rounded-full" />)}
+            {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-6 w-16 rounded-full" />)}
           </div>
         </div>
       </div>

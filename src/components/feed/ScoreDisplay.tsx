@@ -2,11 +2,14 @@
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StarRating } from "@/components/ratings/StarRating";
+import { CINEMA_SCORE_GREEN_MIN, CINEMA_SCORE_AMBER_MIN } from "@/lib/config/scoring";
 
+// Mirrors getCinemaScoreColor in lib/scores.ts; kept local because that module
+// pulls in the DB and can't be imported into a client component. Shared cutoffs.
 function getCinemaScoreColor(score: number | null): string {
   if (score == null) return "text-neutral-400";
-  if (score >= 80) return "text-green-400";
-  if (score >= 60) return "text-amber-400";
+  if (score >= CINEMA_SCORE_GREEN_MIN) return "text-green-400";
+  if (score >= CINEMA_SCORE_AMBER_MIN) return "text-amber-400";
   return "text-red-400";
 }
 

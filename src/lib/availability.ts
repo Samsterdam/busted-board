@@ -3,6 +3,7 @@ import { mediaAvailability } from "./schema";
 import { eq, and } from "drizzle-orm";
 import { getWatchProviders, type WatchProviders } from "./tmdb";
 import { upsertMedia, syncMediaLinks } from "./media-store";
+import { AVAILABILITY_CACHE_TTL_MS } from "./config/durations";
 
 /** Optional media metadata; when supplied, the normalized media/media_links
  * store is populated from the same providers payload on a fresh fetch. */
@@ -14,8 +15,7 @@ export interface MediaMeta {
 
 // Streaming availability shifts more often than critic scores but not by the
 // hour — a day is a good balance between freshness and avoiding redundant TMDB
-// calls. The cache is shared across all users in a region.
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+// calls. The cache is shared across all users in a region. (TTL: see config.)
 
 /**
  * Region-aware, cross-user cache around TMDB watch providers. Returns the same
@@ -45,7 +45,7 @@ export async function getCachedWatchProviders(
     )
     .limit(1);
 
-  if (cached && Date.now() - cached.fetchedAt!.getTime() < CACHE_TTL_MS) {
+  if (cached && Date.now() - cached.fetchedAt!.getTime() < AVAILABILITY_CACHE_TTL_MS) {
     return JSON.parse(cached.providers) as WatchProviders;
   }
 

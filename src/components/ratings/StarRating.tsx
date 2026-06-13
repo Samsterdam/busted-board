@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
+import { RATING_MAX } from "@/lib/config/ratings";
+
+// [1, 2, 3, 4, 5] — one entry per star on the rating scale.
+const STAR_VALUES = Array.from({ length: RATING_MAX }, (_, i) => i + 1);
 
 interface Props {
   value: number;
@@ -21,7 +25,7 @@ export function StarRating({ value, onChange, size = "md", readOnly = false }: P
       role={readOnly ? "img" : "radiogroup"}
       aria-label={`Rating: ${value} out of 5 stars`}
     >
-      {[1, 2, 3, 4, 5].map((star) => {
+      {STAR_VALUES.map((star) => {
         const icon = (
           <Star
             className={`${iconSize} transition-colors ${

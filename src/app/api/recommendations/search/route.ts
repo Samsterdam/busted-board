@@ -7,6 +7,8 @@ import { discoverMovies, searchMulti, posterUrl, getSimilarTitles, type TmdbMovi
 import { getCachedWatchProviders } from "@/lib/availability";
 import { getScores } from "@/lib/scores";
 import { PLATFORM_REGISTRY, ACCESSIBLE_PROVIDER_TYPES } from "@/lib/platforms";
+import { SEARCH_PROVIDER_LOOKUP_LIMIT, SEARCH_RESULT_LIMIT, YEAR_PREFIX_LENGTH } from "@/lib/config/feed";
+import { SEARCH_MIN_VOTE_AVG_DEFAULT } from "@/lib/config/scoring";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
     const genreIds = interpretation.genres.map((g) => genreMap[g]).filter(Boolean).join(",");
     const res = await discoverMovies({
       sort_by: interpretation.sort_by || "popularity.desc",
-      "vote_average.gte": String(interpretation.min_vote_average || 6.0),
+      "vote_average.gte": String(interpretation.min_vote_average || SEARCH_MIN_VOTE_AVG_DEFAULT),
       ...(genreIds ? { with_genres: genreIds } : {}),
     });
     results = (res.results ?? []).map((r) => ({ ...r, media_type: "movie" as const }));
@@ -60,11 +62,11 @@ export async function POST(request: Request) {
   type RawHit = (TmdbMovie | TmdbShow) & { media_type: "movie" | "tv" };
   async function enrich(list: RawHit[]) {
     const withAvailability = await Promise.all(
-      list.slice(0, 20).map(async (r) => {
+      list.slice(0, SEARCH_PROVIDER_LOOKUP_LIMIT).map(async (r) => {
         try {
           const title = ("title" in r ? r.title : r.name) ?? "";
           const dateStr = ("release_date" in r ? r.release_date : r.first_air_date) ?? "";
-          const releaseYear = dateStr ? Number(dateStr.slice(0, 4)) || null : null;
+          const releaseYear = dateStr ? Number(dateStr.slice(0, YEAR_PREFIX_LENGTH)) || null : null;
           const providers = await getCachedWatchProviders(r.id, r.media_type, region, {
             title,
             releaseYear,
@@ -84,9 +86,9 @@ export async function POST(request: Request) {
     );
 
     return Promise.all(
-      withAvailability.slice(0, 8).map(async (r) => {
+      withAvailability.slice(0, SEARCH_RESULT_LIMIT).map(async (r) => {
         const title = ("title" in r ? r.title : r.name) ?? "";
-        const year = (("release_date" in r ? r.release_date : r.first_air_date) ?? "").slice(0, 4);
+        const year = (("release_date" in r ? r.release_date : r.first_air_date) ?? "").slice(0, YEAR_PREFIX_LENGTH);
         const scores = await getScores(r.id, r.media_type, title, year, r.vote_average, r.vote_count, r.popularity, null);
         return {
           tmdbId: r.id, tmdbType: r.media_type, title, year,

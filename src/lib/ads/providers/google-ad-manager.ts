@@ -1,12 +1,19 @@
 import type { AdProvider, AdSlotName } from "../types";
+import {
+  MOBILE_BANNER,
+  LEADERBOARD,
+  MED_RECTANGLE,
+  HALF_PAGE,
+  type AdSize,
+} from "../../config/ads";
 
 /** Ad unit path suffix + size per placement (under /<network>/<unit>). */
-const UNIT: Record<AdSlotName, { unit: string; sizes: [number, number][] }> = {
-  "feed-banner": { unit: "feed_banner", sizes: [[320, 50], [728, 90]] },
-  "feed-inline": { unit: "feed_inline", sizes: [[300, 250]] },
-  sidebar: { unit: "sidebar", sizes: [[300, 250], [300, 600]] },
-  footer: { unit: "footer", sizes: [[728, 90], [320, 50]] },
-  "sticky-bottom": { unit: "sticky", sizes: [[320, 50]] },
+const UNIT: Record<AdSlotName, { unit: string; sizes: AdSize[] }> = {
+  "feed-banner": { unit: "feed_banner", sizes: [MOBILE_BANNER, LEADERBOARD] },
+  "feed-inline": { unit: "feed_inline", sizes: [MED_RECTANGLE] },
+  sidebar: { unit: "sidebar", sizes: [MED_RECTANGLE, HALF_PAGE] },
+  footer: { unit: "footer", sizes: [LEADERBOARD, MOBILE_BANNER] },
+  "sticky-bottom": { unit: "sticky", sizes: [MOBILE_BANNER] },
 };
 
 /**

@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ratings } from "@/lib/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { RATING_MIN, RATING_MAX } from "@/lib/config/ratings";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
   if (!body.tmdbId || !body.tmdbType || !body.title || !body.rating) {
     return Response.json({ error: "Missing required fields" }, { status: 400 });
   }
-  if (body.rating < 1 || body.rating > 5) {
+  if (body.rating < RATING_MIN || body.rating > RATING_MAX) {
     return Response.json({ error: "Rating must be 1–5" }, { status: 400 });
   }
 

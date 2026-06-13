@@ -11,6 +11,9 @@ const SUGGESTED_VIBES = [
   "classic", "horror", "animation", "arthouse",
 ];
 
+// Cap on how many vibe suggestions to surface at once.
+const MAX_VIBE_SUGGESTIONS = 8;
+
 export function VibeTagEditor() {
   const [tags, setTags] = useState<string[]>([]);
   const [input, setInput] = useState("");
@@ -97,7 +100,7 @@ export function VibeTagEditor() {
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {suggestions.slice(0, 8).map((v) => (
+          {suggestions.slice(0, MAX_VIBE_SUGGESTIONS).map((v) => (
             <button
               key={v}
               type="button"

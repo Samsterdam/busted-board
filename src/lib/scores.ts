@@ -1,10 +1,20 @@
 import { db } from "./db";
 import { scoresCache } from "./schema";
 import { eq, and } from "drizzle-orm";
+import { SCORE_CACHE_TTL_MS, OMDB_TIMEOUT_MS } from "./config/durations";
+import {
+  AUDIENCE_SCORE_SCALE,
+  CINEMA_SCORE_WEIGHT,
+  CINEMA_SCORE_GREEN_MIN,
+  CINEMA_SCORE_AMBER_MIN,
+  RIBBON_TRENDING_MIN_POPULARITY,
+  RIBBON_GEM_MIN_VOTE_AVG,
+  RIBBON_GEM_MAX_POPULARITY,
+  RIBBON_FAVORITE_MIN_VOTE_COUNT,
+  RIBBON_NEW_WITHIN_MONTHS,
+} from "./config/scoring";
 
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const OMDB_BASE = "https://www.omdbapi.com";
-const TIMEOUT_MS = 8_000;
 
 export interface ScoreBreakdown {
   audienceScore: number | null;
@@ -15,16 +25,16 @@ export interface ScoreBreakdown {
   tooltipLines: string[];
 }
 
-function computeCinemaScore(audience: number | null, critics: number | null): number | null {
-  const a = audience != null ? audience * 10 : null;
+export function computeCinemaScore(audience: number | null, critics: number | null): number | null {
+  const a = audience != null ? audience * AUDIENCE_SCORE_SCALE : null;
   const c = critics;
-  if (a != null && c != null) return Math.round(a * 0.5 + c * 0.5);
+  if (a != null && c != null) return Math.round(a * CINEMA_SCORE_WEIGHT + c * CINEMA_SCORE_WEIGHT);
   if (a != null) return Math.round(a);
   if (c != null) return Math.round(c);
   return null;
 }
 
-function computeRibbon(
+export function computeRibbon(
   voteAvg: number | null,
   popularity: number | null,
   voteCount: number | null,
@@ -32,14 +42,14 @@ function computeRibbon(
   awards: string | null
 ): string | null {
   if (awards && /won.{0,20}oscar/i.test(awards)) return "oscar";
-  if (popularity != null && popularity > 100) return "trending";
-  if (voteAvg != null && voteAvg >= 7.5 && popularity != null && popularity < 20) return "gem";
-  if (voteCount != null && voteCount > 10_000) return "favorite";
+  if (popularity != null && popularity > RIBBON_TRENDING_MIN_POPULARITY) return "trending";
+  if (voteAvg != null && voteAvg >= RIBBON_GEM_MIN_VOTE_AVG && popularity != null && popularity < RIBBON_GEM_MAX_POPULARITY) return "gem";
+  if (voteCount != null && voteCount > RIBBON_FAVORITE_MIN_VOTE_COUNT) return "favorite";
   if (releaseDate) {
     const released = new Date(releaseDate);
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    if (released > sixMonthsAgo) return "new";
+    const newCutoff = new Date();
+    newCutoff.setMonth(newCutoff.getMonth() - RIBBON_NEW_WITHIN_MONTHS);
+    if (released > newCutoff) return "new";
   }
   return null;
 }
@@ -55,10 +65,11 @@ function buildTooltip(
     lines.push(`Busted Board Cinema Score: ${cinema}`);
     lines.push("─────────────────────────");
   }
-  if (critics != null) lines.push(`🍅 Critics (RT): ${critics}% × 50% = ${(critics * 0.5).toFixed(1)}`);
+  // The "× 50%" labels are the human-readable form of CINEMA_SCORE_WEIGHT (0.5).
+  if (critics != null) lines.push(`🍅 Critics (RT): ${critics}% × 50% = ${(critics * CINEMA_SCORE_WEIGHT).toFixed(1)}`);
   if (audience != null) {
-    const norm = audience * 10;
-    lines.push(`⭐ Public (TMDB): ${audience} × 50% = ${(norm * 0.5).toFixed(1)}`);
+    const norm = audience * AUDIENCE_SCORE_SCALE;
+    lines.push(`⭐ Public (TMDB): ${audience} × 50% = ${(norm * CINEMA_SCORE_WEIGHT).toFixed(1)}`);
     if (voteCount) lines.push(`   (${voteCount.toLocaleString()} votes)`);
   }
   if (critics != null && audience != null && cinema != null) {
@@ -79,7 +90,7 @@ async function fetchOmdbScores(title: string, year: string): Promise<{ critics: 
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), OMDB_TIMEOUT_MS);
     const res = await fetch(url.toString(), { signal: controller.signal });
     clearTimeout(timeout);
     if (!res.ok) return { critics: null, awards: null };
@@ -112,7 +123,7 @@ export async function getScores(
     .limit(1);
 
   // fetchedAt is now a native Date from Postgres
-  const isFresh = cached && (Date.now() - cached.fetchedAt!.getTime()) < CACHE_TTL_MS;
+  const isFresh = cached && (Date.now() - cached.fetchedAt!.getTime()) < SCORE_CACHE_TTL_MS;
   if (isFresh) {
     return {
       audienceScore: cached.audienceScore,
@@ -149,7 +160,7 @@ export async function getScores(
 
 export function getCinemaScoreColor(score: number | null): string {
   if (score == null) return "text-neutral-400";
-  if (score >= 80) return "text-green-400";
-  if (score >= 60) return "text-amber-400";
+  if (score >= CINEMA_SCORE_GREEN_MIN) return "text-green-400";
+  if (score >= CINEMA_SCORE_AMBER_MIN) return "text-amber-400";
   return "text-red-400";
 }

@@ -1,4 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GEMINI_RETRY_BACKOFF_MS } from "./config/durations";
+import { MIN_RATINGS_FOR_PROFILE } from "./config/ratings";
+import { FALLBACK_RANK_LIMIT } from "./config/feed";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -22,7 +25,7 @@ async function callGemini(model: typeof flash, prompt: string, retries = 2): Pro
       return result.response.text();
     } catch (err) {
       if (attempt === retries) throw err;
-      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      await new Promise((r) => setTimeout(r, GEMINI_RETRY_BACKOFF_MS * (attempt + 1)));
     }
   }
   throw new Error("Gemini call failed after retries");
@@ -75,7 +78,7 @@ interface RatingInput {
 export async function generateTasteProfile(
   ratings: RatingInput[]
 ): Promise<TasteProfileResult | null> {
-  if (ratings.length < 3) return null;
+  if (ratings.length < MIN_RATINGS_FOR_PROFILE) return null;
 
   const prompt = `You are a film critic analyzing someone's movie and TV taste.
 
@@ -149,7 +152,7 @@ Rules:
 - The response must be valid JSON array only`;
 
   const fallback = candidates
-    .slice(0, 10)
+    .slice(0, FALLBACK_RANK_LIMIT)
     .map((c, i) => ({
       tmdb_id: c.tmdb_id,
       rank: i + 1,

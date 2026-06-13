@@ -8,6 +8,7 @@
  */
 
 import { AD_ENV, type AdEnv } from "./env";
+import { CONSENT_MAX_AGE_S } from "../config/durations";
 
 export const CONSENT_COOKIE = "bb_ad_consent";
 export type ConsentValue = "granted" | "denied";
@@ -31,8 +32,7 @@ export function readConsent(): ConsentValue | null {
 /** Persist a consent decision for ~1 year. */
 export function writeConsent(value: ConsentValue): void {
   if (typeof document === "undefined") return;
-  const oneYear = 60 * 60 * 24 * 365;
-  document.cookie = `${CONSENT_COOKIE}=${value}; path=/; max-age=${oneYear}; samesite=lax`;
+  document.cookie = `${CONSENT_COOKIE}=${value}; path=/; max-age=${CONSENT_MAX_AGE_S}; samesite=lax`;
 }
 
 /**

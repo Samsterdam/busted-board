@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { StarRating } from "@/components/ratings/StarRating";
 import { toast } from "sonner";
 
+// Cap on how many title search results to show in the rate dialog.
+const MAX_SEARCH_RESULTS = 6;
+
 interface Props {
   tmdbId?: number;
   tmdbType?: "movie" | "tv";
@@ -118,7 +121,7 @@ export function RateModal({
             {searching && <p className="text-xs text-muted-foreground">Searching…</p>}
             {searchResults.length > 0 && (
               <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-secondary space-y-1 p-1">
-                {searchResults.slice(0, 6).map((r) => (
+                {searchResults.slice(0, MAX_SEARCH_RESULTS).map((r) => (
                   <button
                     key={r.id}
                     type="button"

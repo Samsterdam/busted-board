@@ -12,7 +12,7 @@ export default function Loading() {
 
       {/* Platform chips skeleton */}
       <div className="flex gap-2 mb-5">
-        {[1, 2, 3].map((i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="skeleton h-5 w-16 rounded-full" />
         ))}
       </div>

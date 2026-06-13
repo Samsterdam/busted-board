@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/PageShell";
 import { VibeTagEditor } from "@/components/taste/VibeTagEditor";
 import { toast } from "sonner";
+import { MIN_RATINGS_FOR_PROFILE } from "@/lib/config/ratings";
 
 interface TasteProfile {
   top_themes: string[];
@@ -54,7 +55,7 @@ export default function TastePage() {
           variant="ghost"
           size="sm"
           onClick={regenerate}
-          disabled={regenerating || ratingCount < 3}
+          disabled={regenerating || ratingCount < MIN_RATINGS_FOR_PROFILE}
           aria-label="Regenerate taste profile"
         >
           <RefreshCw className={`h-4 w-4 mr-1 ${regenerating ? "animate-spin" : ""}`} aria-hidden="true" />
@@ -70,7 +71,7 @@ export default function TastePage() {
         </div>
       )}
 
-      {!loading && ratingCount < 3 && (
+      {!loading && ratingCount < MIN_RATINGS_FOR_PROFILE && (
         <div className="rounded-xl border border-border bg-card p-6 text-center">
           <p className="text-4xl mb-3">🎬</p>
           <p className="text-sm text-muted-foreground">
@@ -85,7 +86,7 @@ export default function TastePage() {
         </div>
       )}
 
-      {!loading && ratingCount >= 3 && !profile && (
+      {!loading && ratingCount >= MIN_RATINGS_FOR_PROFILE && !profile && (
         <div className="rounded-xl border border-border bg-card p-6 text-center">
           <p className="text-sm text-muted-foreground mb-4">
             You have {ratingCount} ratings. Generate your taste profile to see what we know about your preferences.

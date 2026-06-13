@@ -7,7 +7,7 @@ export default function Loading() {
           <div className="skeleton h-12 w-12 rounded-full mx-auto" />
           <div className="skeleton h-4 w-48 rounded mx-auto" />
           <div className="space-y-2">
-            {[1, 2, 3, 4].map((i) => (
+            {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="skeleton h-4 w-56 rounded mx-auto" />
             ))}
           </div>

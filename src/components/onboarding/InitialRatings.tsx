@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { StarRating } from "@/components/ratings/StarRating";
 import { posterUrl } from "@/lib/tmdb";
+import { YEAR_PREFIX_LENGTH } from "@/lib/config/feed";
+
+// Placeholder rows shown while the seed movies load.
+const SKELETON_ROW_COUNT = 5;
 
 interface SeedMovie {
   id: number;
@@ -43,7 +47,7 @@ export function InitialRatings() {
         <h2 className="text-lg font-semibold mb-1">Rate a few movies</h2>
         <p className="text-sm text-muted-foreground mb-5">This helps us understand your taste.</p>
         <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
+          {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
             <div key={i} className="skeleton h-16 rounded-xl" />
           ))}
         </div>
@@ -59,7 +63,7 @@ export function InitialRatings() {
       </p>
       <div className="space-y-3">
         {movies.map((movie) => {
-          const year = (movie.release_date ?? "").slice(0, 4);
+          const year = (movie.release_date ?? "").slice(0, YEAR_PREFIX_LENGTH);
           const genres = movie.genres?.map((g) => g.name).join(", ") ?? "";
           const imgSrc = posterUrl(movie.poster_path, "w342");
 

@@ -12,6 +12,18 @@ import { db } from "./db";
 import { ratings, dismissedItems, watchlist } from "./schema";
 import { eq } from "drizzle-orm";
 import { ACCESSIBLE_PROVIDER_TYPES } from "./platforms";
+import {
+  YEAR_PREFIX_LENGTH,
+  FEED_PROVIDER_LOOKUP_LIMIT,
+  FEED_RANK_LIMIT,
+  MORE_FEED_PROVIDER_LOOKUP_LIMIT,
+  MORE_FEED_RESULT_LIMIT,
+} from "./config/feed";
+import {
+  CLASSICS_MIN_AGE_YEARS,
+  RECENT_WITHIN_MONTHS,
+  MORE_FEED_OLD_MIN_AGE_YEARS,
+} from "./config/scoring";
 
 export interface FeedItem {
   tmdbId: number;
@@ -65,7 +77,7 @@ export async function enrichToFeedItems(
       try {
         const providers = await getCachedWatchProviders(r.id, r.media_type, region, {
           title,
-          releaseYear: dateStr ? Number(dateStr.slice(0, 4)) || null : null,
+          releaseYear: dateStr ? Number(dateStr.slice(0, YEAR_PREFIX_LENGTH)) || null : null,
           posterPath: r.poster_path,
         });
         const byId = new Map<number, string>();
@@ -84,7 +96,7 @@ export async function enrichToFeedItems(
   const onPlatforms = withProviders.filter((c) => c.platforms.length > 0);
   const items: FeedItem[] = [];
   for (const { r, title, dateStr, platforms, platformIds } of onPlatforms) {
-    const year = dateStr.slice(0, 4);
+    const year = dateStr.slice(0, YEAR_PREFIX_LENGTH);
     const scores = await getScores(
       r.id, r.media_type, title, year, r.vote_average, r.vote_count, r.popularity, dateStr || null
     );
@@ -127,14 +139,14 @@ export async function buildFeed(
   tasteProfile: TasteProfileResult | null
 ): Promise<FeedItem[]> {
   const currentYear = new Date().getFullYear();
-  const eighteenMonthsAgo = new Date();
-  eighteenMonthsAgo.setMonth(eighteenMonthsAgo.getMonth() - 18);
+  const recentCutoff = new Date();
+  recentCutoff.setMonth(recentCutoff.getMonth() - RECENT_WITHIN_MONTHS);
 
   const [trending, hiddenGems, classics, recent] = await Promise.all([
     getTrendingMovies().then((r) => r.results ?? []).catch(() => []),
     fetchCandidateBucket({ "vote_average.gte": "7.5", "vote_count.gte": "500", "popularity.lte": "20", sort_by: "vote_average.desc" }),
-    fetchCandidateBucket({ "vote_average.gte": "7.5", "primary_release_date.lte": `${currentYear - 20}-12-31`, sort_by: "vote_average.desc" }),
-    fetchCandidateBucket({ "primary_release_date.gte": eighteenMonthsAgo.toISOString().split("T")[0], sort_by: "popularity.desc" }),
+    fetchCandidateBucket({ "vote_average.gte": "7.5", "primary_release_date.lte": `${currentYear - CLASSICS_MIN_AGE_YEARS}-12-31`, sort_by: "vote_average.desc" }),
+    fetchCandidateBucket({ "primary_release_date.gte": recentCutoff.toISOString().split("T")[0], sort_by: "popularity.desc" }),
   ]);
 
   const seen = new Set<number>();
@@ -154,11 +166,11 @@ export async function buildFeed(
   const filtered = allCandidates.filter((m) => !watchedIds.has(m.id) && !dismissedIds.has(m.id));
 
   const withProviders = await Promise.all(
-    filtered.slice(0, 60).map(async (movie) => {
+    filtered.slice(0, FEED_PROVIDER_LOOKUP_LIMIT).map(async (movie) => {
       try {
         const providers = await getCachedWatchProviders(movie.id, "movie", region, {
           title: movie.title,
-          releaseYear: movie.release_date ? Number(movie.release_date.slice(0, 4)) || null : null,
+          releaseYear: movie.release_date ? Number(movie.release_date.slice(0, YEAR_PREFIX_LENGTH)) || null : null,
           posterPath: movie.poster_path,
         });
         const byId = new Map<number, string>();
@@ -174,7 +186,7 @@ export async function buildFeed(
     })
   );
 
-  const candidates = withProviders.filter((c) => c.platforms.length > 0).slice(0, 30);
+  const candidates = withProviders.filter((c) => c.platforms.length > 0).slice(0, FEED_RANK_LIMIT);
   if (candidates.length === 0) return [];
 
   let ranked: RankedRecommendation[];
@@ -184,7 +196,7 @@ export async function buildFeed(
       candidates.map((c) => ({
         tmdb_id: c.movie.id,
         title: c.movie.title,
-        year: (c.movie.release_date ?? "").slice(0, 4),
+        year: (c.movie.release_date ?? "").slice(0, YEAR_PREFIX_LENGTH),
         genres: [],
         overview: c.movie.overview ?? "",
         vote_average: c.movie.vote_average,
@@ -206,7 +218,7 @@ export async function buildFeed(
     const candidate = candidates.find((c) => c.movie.id === rec.tmdb_id);
     if (!candidate) continue;
     const m = candidate.movie;
-    const year = (m.release_date ?? "").slice(0, 4);
+    const year = (m.release_date ?? "").slice(0, YEAR_PREFIX_LENGTH);
     const scores = await getScores(m.id, "movie", m.title, year, m.vote_average, m.vote_count, m.popularity, m.release_date ?? null);
     feedItems.push({
       tmdbId: m.id, tmdbType: "movie", title: m.title, year,
@@ -244,7 +256,7 @@ export async function buildMoreFeed(
   const strategies: Record<string, string>[] = [
     { sort_by: "vote_average.desc", "vote_count.gte": "500" },
     { sort_by: "popularity.desc" },
-    { sort_by: "vote_average.desc", "vote_count.gte": "200", "primary_release_date.lte": `${new Date().getFullYear() - 5}-12-31` },
+    { sort_by: "vote_average.desc", "vote_count.gte": "200", "primary_release_date.lte": `${new Date().getFullYear() - MORE_FEED_OLD_MIN_AGE_YEARS}-12-31` },
     { sort_by: "primary_release_date.desc", "vote_average.gte": "6.5" },
   ];
   const strategy = strategies[(page - 2) % strategies.length];
@@ -259,11 +271,11 @@ export async function buildMoreFeed(
   }
 
   const withProviders = await Promise.all(
-    candidates.slice(0, 40).map(async (movie) => {
+    candidates.slice(0, MORE_FEED_PROVIDER_LOOKUP_LIMIT).map(async (movie) => {
       try {
         const providers = await getCachedWatchProviders(movie.id, "movie", region, {
           title: movie.title,
-          releaseYear: movie.release_date ? Number(movie.release_date.slice(0, 4)) || null : null,
+          releaseYear: movie.release_date ? Number(movie.release_date.slice(0, YEAR_PREFIX_LENGTH)) || null : null,
           posterPath: movie.poster_path,
         });
         const byId = new Map<number, string>();
@@ -279,10 +291,10 @@ export async function buildMoreFeed(
     })
   );
 
-  const onPlatforms = withProviders.filter((c) => c.platforms.length > 0).slice(0, 12);
+  const onPlatforms = withProviders.filter((c) => c.platforms.length > 0).slice(0, MORE_FEED_RESULT_LIMIT);
   const feedItems: FeedItem[] = [];
   for (const { movie: m, platforms, platformIds } of onPlatforms) {
-    const year = (m.release_date ?? "").slice(0, 4);
+    const year = (m.release_date ?? "").slice(0, YEAR_PREFIX_LENGTH);
     const scores = await getScores(m.id, "movie", m.title, year, m.vote_average, m.vote_count, m.popularity, m.release_date ?? null);
     feedItems.push({
       tmdbId: m.id, tmdbType: "movie", title: m.title, year,

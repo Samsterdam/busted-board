@@ -4,8 +4,7 @@ import { userPlatforms, feedCache, tasteProfile, ratings, users } from "@/lib/sc
 import { eq } from "drizzle-orm";
 import { buildFeed, buildMoreFeed } from "@/lib/recommendation-engine";
 import { PLATFORM_REGISTRY } from "@/lib/platforms";
-
-const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+import { FEED_CACHE_MAX_AGE_MS } from "@/lib/config/durations";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -32,7 +31,7 @@ export async function GET(request: Request) {
     const [cached] = await db.select().from(feedCache).where(eq(feedCache.userId, userId)).limit(1);
     if (cached) {
       const age = cached.generatedAt ? Date.now() - cached.generatedAt.getTime() : Infinity;
-      if (age < CACHE_MAX_AGE_MS) {
+      if (age < FEED_CACHE_MAX_AGE_MS) {
         return Response.json({ feed: JSON.parse(cached.recommendations), cached: true });
       }
     }

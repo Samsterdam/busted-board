@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 import { ratings, tasteProfile } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { generateTasteProfile } from "@/lib/gemini";
-
-const REGEN_COOLDOWN_MS = 5 * 60 * 1000;
+import { TASTE_PROFILE_COOLDOWN_MS } from "@/lib/config/durations";
+import { MIN_RATINGS_FOR_PROFILE } from "@/lib/config/ratings";
 
 export async function POST() {
   const session = await auth();
@@ -14,13 +14,13 @@ export async function POST() {
   const [existing] = await db.select().from(tasteProfile).where(eq(tasteProfile.userId, userId)).limit(1);
   if (existing?.lastGeneratedAt) {
     const age = Date.now() - new Date(existing.lastGeneratedAt).getTime();
-    if (age < REGEN_COOLDOWN_MS) {
+    if (age < TASTE_PROFILE_COOLDOWN_MS) {
       return Response.json({ error: "Please wait before regenerating" }, { status: 429 });
     }
   }
 
   const allRatings = await db.select().from(ratings).where(eq(ratings.userId, userId));
-  if (allRatings.length < 3) return Response.json({ error: "Rate at least 3 movies first" }, { status: 400 });
+  if (allRatings.length < MIN_RATINGS_FOR_PROFILE) return Response.json({ error: "Rate at least 3 movies first" }, { status: 400 });
 
   const result = await generateTasteProfile(
     allRatings.map((r) => ({ title: r.title, year: "", rating: r.rating, notes: r.notes, genres: [] }))
