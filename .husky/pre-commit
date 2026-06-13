@@ -1,0 +1,14 @@
+# Lint staged TS/TSX. ESLint exits non-zero only on errors, so the file-length
+# and no-magic-numbers gates block the commit; pre-existing warnings don't.
+npx lint-staged || exit 1
+
+# Secret scan on staged content. gitleaks is a standalone binary (not an npm
+# dep); when it isn't installed locally we warn instead of blocking — CI runs it
+# hard on every push/PR. Install one of:
+#   winget install gitleaks   |   scoop install gitleaks   |   brew install gitleaks
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --config .gitleaks.toml || exit 1
+else
+  echo "⚠ gitleaks not found — skipping local secret scan (CI still enforces it)."
+  echo "  Install: winget install gitleaks"
+fi

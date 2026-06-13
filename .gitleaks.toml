@@ -1,0 +1,24 @@
+# gitleaks configuration for busted-board.
+# Extends the maintained default ruleset and adds project-specific allowlisting.
+# Run locally:  gitleaks protect --staged --redact --config .gitleaks.toml
+title = "busted-board"
+
+[extend]
+# Start from gitleaks' built-in rules (AWS keys, private keys, provider tokens,
+# high-entropy secrets, etc.) rather than redefining them.
+useDefault = true
+
+[allowlist]
+description = "Project allowlist — placeholder/template values that are not real secrets"
+# Inline `gitleaks:allow` comments are still honored in addition to this.
+paths = [
+  # The committed env template is placeholders only.
+  '''\.env\.example$''',
+]
+regexes = [
+  # Throwaway DSNs pointing at localhost (CI build env, vitest test env) carry
+  # dummy credentials, not secrets.
+  '''(postgres|postgresql|mysql|mongodb|redis)://[^:@/\s]+:[^:@/\s]+@(localhost|127\.0\.0\.1)''',
+  # Documented CI placeholder for AUTH_SECRET.
+  '''ci-placeholder-not-a-real-secret''',
+]
