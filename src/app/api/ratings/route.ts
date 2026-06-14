@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ratings } from "@/lib/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { RATING_MIN, RATING_MAX, NOTES_MAX_LENGTH, TITLE_MAX_LENGTH, RATING_SOURCE_USER } from "@/lib/config/ratings";
+import { RATING_MIN, RATING_MAX, NOTES_MAX_LENGTH, TITLE_MAX_LENGTH, RATING_SOURCE_USER, RATING_SOURCE_QUICK } from "@/lib/config/ratings";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -38,7 +38,9 @@ export async function POST(request: Request) {
     rating: number;
     notes?: string;
     watchStatus?: "watched" | "watching" | "completed" | "dropped";
+    source?: "user" | "quick";
   };
+  const source = body.source === RATING_SOURCE_QUICK ? RATING_SOURCE_QUICK : RATING_SOURCE_USER;
 
   if (!body.tmdbId || !body.tmdbType || !body.title || !body.rating) {
     return Response.json({ error: "Missing required fields" }, { status: 400 });
@@ -78,6 +80,7 @@ export async function POST(request: Request) {
     rating: body.rating,
     notes: body.notes ?? null,
     watchStatus: body.watchStatus ?? "watched",
+    source,
   }).returning({ id: ratings.id });
 
   return Response.json({ id: result?.id, created: true });

@@ -4,9 +4,10 @@
 export const RATING_MIN = 1;
 export const RATING_MAX = 5;
 
-/** Source of a rating — distinguishes deliberate user ratings from quiz verdicts. */
+/** Source of a rating — distinguishes deliberate user ratings from quiz verdicts and quick card reactions. */
 export const RATING_SOURCE_USER = "user";
 export const RATING_SOURCE_QUIZ = "quiz";
+export const RATING_SOURCE_QUICK = "quick";
 
 /** Minimum number of ratings before a taste profile can be generated. */
 export const MIN_RATINGS_FOR_PROFILE = 3;

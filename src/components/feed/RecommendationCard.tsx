@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { X, Bookmark, BookmarkCheck, Eye } from "lucide-react";
+import { X, Bookmark, BookmarkCheck, Eye, ThumbsUp } from "lucide-react";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { CinemaScoreBadge, ThreeScoreRow } from "./ScoreDisplay";
@@ -16,6 +16,7 @@ interface Props {
   onDismiss: () => void;
   onWatchlist: () => void;
   onWatched: () => void;
+  onThumbsUp: () => void;
   onClick: () => void;
 }
 
@@ -28,6 +29,7 @@ export function RecommendationCard({
   onDismiss,
   onWatchlist,
   onWatched,
+  onThumbsUp,
   onClick,
 }: Props) {
   return (
@@ -96,6 +98,17 @@ export function RecommendationCard({
             <Eye className={`h-3 w-3 ${inWatched ? "text-green-400" : ""}`} aria-hidden="true" />
           </TooltipTrigger>
           <TooltipContent side="left">Mark as watched</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            onClick={onThumbsUp}
+            className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-amber-600/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label={`Like ${item.title}`}
+          >
+            <ThumbsUp className="h-3 w-3" aria-hidden="true" />
+          </TooltipTrigger>
+          <TooltipContent side="left">Like this</TooltipContent>
         </Tooltip>
       </div>
 

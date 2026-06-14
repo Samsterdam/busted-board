@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Bookmark, Sparkles, Settings } from "lucide-react";
+import { Home, Bookmark, Sparkles, Settings, Shuffle } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Feed", icon: Home },
   { href: "/watched", label: "Watched", icon: Bookmark },
   { href: "/taste", label: "Taste", icon: Sparkles },
+  { href: "/surprise", label: "Surprise", icon: Shuffle },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 

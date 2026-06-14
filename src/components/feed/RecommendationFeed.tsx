@@ -9,7 +9,7 @@ import { MovieDetailModal } from "./MovieDetailModal";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { slotHasActiveProvider } from "@/lib/ads/registry";
 import type { FeedItem } from "@/lib/recommendation-engine";
-import { MIN_RATINGS_FOR_PROFILE } from "@/lib/config/ratings";
+import { MIN_RATINGS_FOR_PROFILE, RATING_MAX, RATING_SOURCE_QUICK } from "@/lib/config/ratings";
 import { toFeedItem, FeedSkeleton, EmptyState } from "./FeedStates";
 import { useWatchedIds } from "./hooks/useWatchedIds";
 import { toast } from "sonner";
@@ -188,6 +188,23 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tmdbId: item.tmdbId, tmdbType: item.tmdbType }),
     }).catch(() => null);
+  }
+
+  async function handleThumbsUp(item: FeedItem) {
+    setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
+    await fetch("/api/ratings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tmdbId: item.tmdbId,
+        tmdbType: item.tmdbType,
+        title: item.title,
+        posterPath: item.posterUrl,
+        rating: RATING_MAX,
+        source: RATING_SOURCE_QUICK,
+      }),
+    }).catch(() => null);
+    toast.success("Liked!");
   }
 
   async function handleWatchlist(item: FeedItem) {
@@ -398,6 +415,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
                   onDismiss={() => handleDismiss(item)}
                   onWatchlist={() => handleWatchlist(item)}
                   onWatched={() => handleWatched(item)}
+                  onThumbsUp={() => handleThumbsUp(item)}
                 />
               </div>
               {/* Ad band every N cards — only when ads are on. Off → nothing
@@ -429,6 +447,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
                   onDismiss={() => handleDismiss(item)}
                   onWatchlist={() => handleWatchlist(item)}
                   onWatched={() => handleWatched(item)}
+                  onThumbsUp={() => handleThumbsUp(item)}
                 />
               </div>
             ))}
