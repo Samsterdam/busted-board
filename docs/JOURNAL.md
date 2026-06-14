@@ -5,6 +5,37 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 21 — growth tasks: Letterboxd import, SEO, deploy)
+
+### Done
+
+- **Migration 0006 applied** — `subscriptions` table live in Neon.
+- **Letterboxd CSV import** — full stack:
+  - `src/lib/csv-parser.ts`: shared CSV parsing utilities extracted from `trakt-import.ts` (parseCsvLine, parseCsv, col) — both importers now share one implementation
+  - `src/lib/letterboxd-import.ts`: parser for Letterboxd `ratings.csv`/`watched.csv` and `watchlist.csv`; no TMDB IDs in Letterboxd exports, so matching is title+year
+  - `src/app/api/import/letterboxd/route.ts`: POST endpoint; batch-loads `media` catalog once, does in-memory title+year match (±1yr tolerance), inserts ratings and watchlist items, logs to `importHistory`
+  - `src/components/settings/LetterboxdImportSection.tsx`: two-file upload UI with result summary card showing imported/skipped/not-found counts
+  - `src/app/(app)/settings/page.tsx`: Letterboxd section added after Trakt section
+- **Sitemap + robots** for SEO:
+  - `src/app/sitemap.ts`: generates `/sitemap.xml` covering `/`, `/browse`, `/top/[slug]` for all 14 platforms; daily changeFrequency
+  - `src/app/robots.ts`: allows crawlers on public pages, blocks `/api/`, `/settings`, `/login`
+- **r/trakt post draft** written (in this session's conversation — ready to post)
+
+### Next / open — needs Sam's action
+
+- **Stripe (before billing goes live):**
+  1. Create Stripe account → set up 2 products (monthly $3/mo, annual $25/yr)
+  2. Get keys: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+  3. Add all 5 to Vercel dashboard
+  4. Register webhook in Stripe dashboard → `https://busted-board.vercel.app/api/webhooks/stripe`
+  5. Events to listen for: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- **Amazon Associates:** register at associates.amazon.com, confirm tracking tag `bustedboard-20` is available
+- **Google Search Console:** add property for `busted-board.vercel.app`, submit `/sitemap.xml`
+- **r/trakt post:** copy the draft from session 21 conversation, post after confirming TV sync works
+- **Sync TV Shows:** click Settings → Admin → Sync TV Shows (MOTN series prefix fix is live)
+
+---
+
 ## 2026-06-14 (session 18b — image fix + feed preload)
 
 ### Done
