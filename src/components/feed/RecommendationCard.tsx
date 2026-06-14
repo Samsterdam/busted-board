@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { X, Bookmark, BookmarkCheck, Eye } from "lucide-react";
 import type { FeedItem } from "@/lib/recommendation-engine";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { CinemaScoreBadge, ThreeScoreRow } from "./ScoreDisplay";
 import { RibbonBadge } from "./RibbonBadge";
 
@@ -60,33 +61,42 @@ export function RecommendationCard({
           nested inside it — since <button> cannot contain other <button>s.
           Positioned over the poster via the card root's `relative`. */}
       <div className="pointer-events-none absolute right-1.5 top-1.5 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-900/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
-          aria-label={`Hide ${item.title} from feed`}
-        >
-          <X className="h-3 w-3" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          onClick={onWatchlist}
-          className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-primary/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
-          aria-label={inWatchlist ? `Remove ${item.title} from watchlist` : `Add ${item.title} to watchlist`}
-        >
-          {inWatchlist
-            ? <BookmarkCheck className="h-3 w-3 text-primary" aria-hidden="true" />
-            : <Bookmark className="h-3 w-3" aria-hidden="true" />
-          }
-        </button>
-        <button
-          type="button"
-          onClick={onWatched}
-          className={`pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-green-700/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary ${inWatched ? "opacity-60" : ""}`}
-          aria-label={`Mark ${item.title} as watched`}
-        >
-          <Eye className={`h-3 w-3 ${inWatched ? "text-green-400" : ""}`} aria-hidden="true" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            onClick={onDismiss}
+            className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-900/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label={`Hide ${item.title} from feed`}
+          >
+            <X className="h-3 w-3" aria-hidden="true" />
+          </TooltipTrigger>
+          <TooltipContent side="left">Hide from feed</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            onClick={onWatchlist}
+            className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-primary/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label={inWatchlist ? `Remove ${item.title} from watchlist` : `Add ${item.title} to watchlist`}
+          >
+            {inWatchlist
+              ? <BookmarkCheck className="h-3 w-3 text-primary" aria-hidden="true" />
+              : <Bookmark className="h-3 w-3" aria-hidden="true" />
+            }
+          </TooltipTrigger>
+          <TooltipContent side="left">{inWatchlist ? "Remove from watchlist" : "Add to watchlist"}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            onClick={onWatched}
+            className={`pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-green-700/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary ${inWatched ? "opacity-60" : ""}`}
+            aria-label={`Mark ${item.title} as watched`}
+          >
+            <Eye className={`h-3 w-3 ${inWatched ? "text-green-400" : ""}`} aria-hidden="true" />
+          </TooltipTrigger>
+          <TooltipContent side="left">Mark as watched</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Info */}
