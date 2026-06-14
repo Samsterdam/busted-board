@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/PageShell";
 import { VibeTagEditor } from "@/components/taste/VibeTagEditor";
 import { toast } from "sonner";
@@ -51,16 +52,21 @@ export default function TastePage() {
     <PageShell className="px-4 py-4">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold">Your Taste Profile</h1>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={regenerate}
-          disabled={regenerating || ratingCount < MIN_RATINGS_FOR_PROFILE}
-          aria-label="Regenerate taste profile"
-        >
-          <RefreshCw className={`h-4 w-4 mr-1 ${regenerating ? "animate-spin" : ""}`} aria-hidden="true" />
-          Regenerate
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/quiz" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            Take Quiz →
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={regenerate}
+            disabled={regenerating || ratingCount < MIN_RATINGS_FOR_PROFILE}
+            aria-label="Regenerate taste profile"
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${regenerating ? "animate-spin" : ""}`} aria-hidden="true" />
+            Regenerate
+          </Button>
+        </div>
       </div>
 
       {loading && (
@@ -77,12 +83,22 @@ export default function TastePage() {
           <p className="text-sm text-muted-foreground">
             Rate at least 3 movies to generate your taste profile.
           </p>
-          <Button
-            className="mt-4 bg-primary text-primary-foreground"
-            onClick={() => window.location.href = "/watched"}
-          >
-            Rate Movies →
-          </Button>
+          <div className="mt-4 flex flex-col gap-2 items-center">
+            <Link
+              href="/quiz"
+              className={buttonVariants({ className: "bg-primary text-primary-foreground w-full max-w-xs" })}
+            >
+              Take Taste Quiz →
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => window.location.href = "/watched"}
+            >
+              Or rate movies manually
+            </Button>
+          </div>
         </div>
       )}
 
