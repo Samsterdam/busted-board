@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   description: "Find something great to watch based on your taste and streaming services.",
   manifest: "/manifest.json",
   metadataBase: new URL("https://busted-board.vercel.app"),
+  other: {
+    "probely-verification": "010c2f8b-25c5-4701-8338-ce627a92019c",
+  },
 };
 
 export const viewport: Viewport = {
