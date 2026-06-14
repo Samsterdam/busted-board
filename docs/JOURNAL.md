@@ -5,6 +5,34 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 7)
+
+### Done
+
+- **Removed chat and AI search features**: deleted `/chat` page + loading, `/api/recommendations/search` route, `interpretSearchQuery` from `gemini.ts`, and Chat entry from `BottomNav`. Committed `eea9cad`.
+- **Fixed: dismissed and watched items now fully removed from all feed surfaces** (`dc7d0be`):
+  - Dismiss route was not calling `invalidateFeedCache` — dismissed items could reappear on page reload for up to 12 hours (cache TTL). Fixed.
+  - Browse page (`enrichToFeedItems`) had no dismiss/watch filtering — items dismissed from the feed still showed in Browse collections. Fixed by adding optional `userId` param that queries dismissed/watched and filters before provider lookups.
+  - Added unique constraint on `dismissedItems(userId, tmdbId, tmdbType)` (matching `watched` table pattern) to prevent duplicate rows. Migration `0002_steady_squadron_sinister.sql` generated; constraint applied directly to DB.
+  - Extracted `invalidateFeedCache` to `src/lib/feed-cache.ts` (shared utility, used by both watched and dismiss routes).
+
+### Next / open
+- Carryover from prior sessions still open (see below).
+
+---
+
+## 2026-06-14 (session 6)
+
+### Done
+
+- **Rating Breakdown chart on taste page**: new `/api/ratings/stats` route returns star distribution via `GROUP BY rating`; `RatingDistribution` component renders pure-CSS horizontal bars (no library); wired into `taste/page.tsx` as a 3rd parallel fetch. Committed `0783c0e`.
+- **Confirmed**: `MovieDetailModal` already renders `whyYoullLikeThis` (line 109) — no changes needed there.
+
+### Next / open
+- Carryover from prior sessions still open (see below).
+
+---
+
 ## 2026-06-14 (session 5)
 
 ### Done
