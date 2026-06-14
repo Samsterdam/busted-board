@@ -5,6 +5,34 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 19 — API call reduction, doc sync, deploy unblock)
+
+### Done
+
+- **TMDB watch-provider API call reduction** (70–90% in steady state):
+  - `recommendation-engine.ts`: `queryCatalogCandidates()` now JOINs `platforms` and returns `CatalogCandidate[]` with platform data pre-resolved from DB — no TMDB call for catalog movies. Added `region` filter to the JOIN.
+  - `availability.ts`: new `prefetchWatchProviders()` batch-fetches `mediaAvailability` for non-catalog candidates in one SELECT before the Promise.all loop.
+  - `config/durations.ts`: `AVAILABILITY_CACHE_TTL_MS` raised 1d → 3d.
+- **Documentation sync** — all docs updated to match current build:
+  - `README.md`: replaced boilerplate with project description, stack, setup steps, links to docs
+  - `ARCHITECTURE.md`: added MOTN/Watchmode to services table; rewrote recommendation engine flow; fixed TTL (24h→3d); updated privacy footnote
+  - `ENV.md`: new "Optional — Catalog Sync" section (6 vars); `.env.local` template; Vercel checklist step 7
+  - `API.md`: added 5 missing routes — `recommendations/search`, `recommendations/discovery`, `tmdb/search`, `tmdb/seed-movies`, `admin/sync-catalog`
+- **Deploy unblocked**: ran migration 0005 against Neon; added `STREAMING_AVAILABILITY_API_KEY` to Vercel production; deployed; promoted.
+- **Sync admin UI improvements**: quota progress bar, per-type stats grid (last sync, titles, API calls). `AdminSection` extracted to `src/components/settings/`.
+- **Fix: zero TV shows on sync** — MOTN uses `"series/N"` as the TMDB ID prefix for TV, not `"tv/N"`. `parseTmdbId()` in `motn.ts` now accepts both.
+- **Committed parallel session's work** — TV recommendations, Trakt import, Stripe billing foundation, public browse pages, settings component extraction, migration 0006 (subscriptions table). Fixed Stripe dahlia API version (`current_period_end` moved to `items.data[0]`), magic number lint errors throughout.
+
+### Next / open
+
+- Run migration 0006 against Neon: `node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate`
+- Run Sync TV Shows in Settings (MOTN series prefix fix is now deployed — should work)
+- Add Stripe env vars to Vercel when ready to enable billing: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_MONTHLY_PRICE_ID`, `STRIPE_ANNUAL_PRICE_ID`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- Future: "Watch on [Platform]" deep-link button in `MovieDetailModal`
+- Future: pre-warm `mediaAvailability` during catalog sync
+
+---
+
 ## 2026-06-14 (session 18 — image fix)
 
 ### Done
