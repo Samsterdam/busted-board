@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, MessageCircle, Bookmark, Sparkles, Settings } from "lucide-react";
+import { Home, Bookmark, Sparkles, Settings } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Feed", icon: Home },
-  { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/watched", label: "Watched", icon: Bookmark },
   { href: "/taste", label: "Taste", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },

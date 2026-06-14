@@ -57,15 +57,6 @@ export interface RankedRecommendation {
   why_youll_like_this: string;
 }
 
-export interface SearchQueryInterpretation {
-  search_term: string | null;
-  genres: string[];
-  min_vote_average: number;
-  sort_by: string;
-  keywords: string[];
-  explanation: string;
-}
-
 // --- Taste Profile ---
 
 interface RatingInput {
@@ -170,51 +161,3 @@ Rules:
   }
 }
 
-// --- Chat/Search Query Interpretation ---
-
-export async function interpretSearchQuery(
-  query: string,
-  profile: TasteProfileResult | null
-): Promise<SearchQueryInterpretation> {
-  const fallback: SearchQueryInterpretation = {
-    search_term: query,
-    genres: [],
-    min_vote_average: 6.0,
-    sort_by: "popularity.desc",
-    keywords: [],
-    explanation: `Searching for: ${query}`,
-  };
-
-  const prompt = `You are helping someone find a movie or TV show to watch.
-
-Their query: "${query}"
-
-Their taste profile (may be null):
-${JSON.stringify(profile)}
-
-Interpret the query and return a JSON object:
-{
-  "search_term": string | null,
-  "genres": string[],
-  "min_vote_average": number,
-  "sort_by": "popularity.desc" | "vote_average.desc" | "primary_release_date.desc",
-  "keywords": string[],
-  "explanation": string
-}
-
-Rules:
-- search_term: if they named a specific title or director, put it here; otherwise null
-- genres: TMDB genre names that match the mood/request (Action, Comedy, Drama, etc.)
-- min_vote_average: 6.0 for casual, 7.0 for quality-focused, 7.5 for prestige
-- keywords: thematic keywords to search for (e.g. "time travel", "heist", "found family")
-- explanation: 1 sentence describing what you understood from the query`;
-
-  try {
-    const text = await callGemini(flash, prompt);
-    const result = safeParseJSON<SearchQueryInterpretation>(text, fallback);
-    if (!result || typeof result.explanation !== "string") return fallback;
-    return result;
-  } catch {
-    return fallback;
-  }
-}
