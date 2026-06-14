@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Fragment } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { RefreshCw, Gem, LayoutGrid, Grid2x2, Rows3, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { slotHasActiveProvider } from "@/lib/ads/registry";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { MIN_RATINGS_FOR_PROFILE, RATING_MAX, RATING_SOURCE_QUICK } from "@/lib/config/ratings";
+import { useFeedPagination } from "./hooks/useFeedPagination";
 import { toFeedItem, GridSkeleton, EmptyState } from "./FeedStates";
 import { ResultsSection } from "./ResultsSection";
 import { PlatformFilter } from "./PlatformFilter";
@@ -105,37 +106,9 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
   const [watchedIds, setWatchedIds] = useWatchedIds();
   const [userRatings, setUserRatings] = useState<Record<number, number>>({});
-  const [needsRatings, setNeedsRatings] = useState(false);
-  const [staleWarning, setStaleWarning] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
   const { discovery, setDiscovery, loadingDiscovery } = useDiscovery(feed.length, loading);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  const loadFeed = useCallback(async (refresh = false) => {
-    if (refresh) setRefreshing(true);
-    else setLoading(true);
-
-    try {
-      const res = await fetch(`/api/recommendations/feed${refresh ? "?refresh=1" : ""}`);
-      const data = await res.json();
-
-      if (data.needsRatings) {
-        setNeedsRatings(true);
-        return;
-      }
-
-      setFeed(data.feed ?? []);
-      setStaleWarning(data.stale ? data.error : null);
-      if (data.error && !data.stale) toast.error(data.error);
-    } catch {
-      toast.error("Could not load recommendations.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const { loadingMore, hasMore, needsRatings, staleWarning, sentinelRef, loadFeed } =
+    useFeedPagination({ feed, setFeed, setLoading, setRefreshing });
 
   // Load user ratings for the feed items
   useEffect(() => {
@@ -150,40 +123,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
       .catch(() => null);
   }, [feed]);
 
-  // Fetch-on-mount. loadFeed() sets loading=true synchronously, but `loading`
-  // already starts true, so this is a no-op re-set, not a cascading render.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadFeed(); }, [loadFeed]);
-
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore || feed.length === 0) return;
-    setLoadingMore(true);
-    const nextPage = page + 1;
-    const seenIds = feed.map((i) => i.tmdbId).join(",");
-    try {
-      const res = await fetch(`/api/recommendations/feed?page=${nextPage}&seenIds=${seenIds}`);
-      const data = await res.json();
-      const newItems: typeof feed = data.feed ?? [];
-      if (newItems.length === 0) { setHasMore(false); return; }
-      setFeed((prev) => [...prev, ...newItems]);
-      setPage(nextPage);
-    } catch {
-      // silently fail — user can scroll up and retry
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [feed, loadingMore, hasMore, page]);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMore(); },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [loadMore]);
 
   async function handleDismiss(item: FeedItem) {
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
@@ -402,7 +342,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
               {/* Ad band every N cards — only when ads are on. Off → nothing
                   here, so the feed is just more movie tiles. */}
               {showAd && (
-                <div className="col-span-2 sm:col-span-3 lg:col-span-4">
+                <div className="col-span-full">
                   <AdBanner />
                 </div>
               )}

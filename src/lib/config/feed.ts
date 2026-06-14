@@ -26,6 +26,9 @@ export const SEED_MOVIES_LIMIT = 8;
 /** Characters of an ISO date that form the year: `"2024-05-01".slice(0, 4)`. */
 export const YEAR_PREFIX_LENGTH = 4;
 
+// Infinite scroll — how far before the sentinel (px) to fire the next-page fetch
+export const FEED_SCROLL_PRELOAD_PX = 600;
+
 // Discovery section (discovery-engine.buildDiscoveryItems)
 export const DISCOVERY_CANDIDATE_LIMIT = 40; // provider lookups per request
 export const DISCOVERY_RESULT_LIMIT = 8;     // max items returned

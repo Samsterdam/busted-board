@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { userPlatforms, feedCache, tasteProfile, ratings, users } from "@/lib/schema";
+import { userPlatforms, tasteProfile, ratings, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { buildFeed, buildMoreFeed } from "@/lib/recommendation-engine";
 import { PLATFORM_REGISTRY } from "@/lib/platforms";
-import { FEED_CACHE_MAX_AGE_MS } from "@/lib/config/durations";
+import { readCachePages, writeCachePage } from "@/lib/feed-cache";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -23,18 +23,25 @@ export async function GET(request: Request) {
     .map((p) => PLATFORM_REGISTRY.find((r) => r.slug === p.platformSlug)?.tmdbId)
     .filter((id): id is number => id != null);
 
+  const region = user?.country ?? "US";
+
+  // Pages 2+: serve from cache when fresh, else build and cache.
   if (page >= 2) {
-    const more = await buildMoreFeed(userId, platformTmdbIds, platformSlugs, user?.country ?? "US", seenIds, page);
+    const cached = forceRefresh ? null : await readCachePages(userId);
+    const cachedPage = cached?.pages[String(page)];
+    if (cachedPage) {
+      return Response.json({ feed: cachedPage, cached: true, page });
+    }
+    const more = await buildMoreFeed(userId, platformTmdbIds, platformSlugs, region, seenIds, page);
+    await writeCachePage(userId, page, more, cached?.pages ?? {});
     return Response.json({ feed: more, cached: false, page });
   }
 
+  // Page 1: cache-first.
   if (!forceRefresh) {
-    const [cached] = await db.select().from(feedCache).where(eq(feedCache.userId, userId)).limit(1);
-    if (cached) {
-      const age = cached.generatedAt ? Date.now() - cached.generatedAt.getTime() : Infinity;
-      if (age < FEED_CACHE_MAX_AGE_MS) {
-        return Response.json({ feed: JSON.parse(cached.recommendations), cached: true });
-      }
+    const cached = await readCachePages(userId);
+    if (cached?.pages["1"]) {
+      return Response.json({ feed: cached.pages["1"], cached: true });
     }
   }
 
@@ -52,21 +59,14 @@ export async function GET(request: Request) {
   } : null;
 
   try {
-    const feed = await buildFeed(userId, platformTmdbIds, platformSlugs, user?.country ?? "US", parsedProfile);
-
-    const [existing] = await db.select().from(feedCache).where(eq(feedCache.userId, userId)).limit(1);
-    if (existing) {
-      await db.update(feedCache).set({ recommendations: JSON.stringify(feed), generatedAt: new Date() }).where(eq(feedCache.userId, userId));
-    } else {
-      await db.insert(feedCache).values({ userId, recommendations: JSON.stringify(feed) });
-    }
-
+    const feed = await buildFeed(userId, platformTmdbIds, platformSlugs, region, parsedProfile);
+    await writeCachePage(userId, 1, feed, {});
     return Response.json({ feed, cached: false });
   } catch (err) {
     console.error("Feed generation failed:", err);
-    const [stale] = await db.select().from(feedCache).where(eq(feedCache.userId, userId)).limit(1);
-    if (stale) {
-      return Response.json({ feed: JSON.parse(stale.recommendations), cached: true, stale: true, error: "AI recommendations temporarily unavailable" });
+    const stale = await readCachePages(userId);
+    if (stale?.pages["1"]) {
+      return Response.json({ feed: stale.pages["1"], cached: true, stale: true, error: "AI recommendations temporarily unavailable" });
     }
     return Response.json({ feed: [], error: "Could not generate recommendations" }, { status: 503 });
   }
