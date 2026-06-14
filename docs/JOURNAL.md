@@ -5,6 +5,78 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 20 wrap-up — revenue setup complete)
+
+### What was built this session (sessions 20–23 combined)
+
+- **Trakt CSV import** — Settings → "Import from Trakt"; ratings + watchlist, idempotent, logs to importHistory
+- **Letterboxd CSV import** — Settings → "Import from Letterboxd"; matches by title+year ±1 against catalog (no TMDB calls)
+- **Stripe freemium** — subscriptions table, billing routes, webhook handler, watchlist gate (50-item free limit). Stripe is gracefully inactive until env vars are added — app works normally without them.
+- **Public browse pages** — `/browse` and `/top/[platform]` (14 pages), ISR 1hr, no login required; OG metadata, JSON-LD breadcrumbs, canonical URLs, sitemap, robots.txt
+- **Affiliate links** — "Watch on [Platform]" button in detail modal; Prime Video → Amazon Associates (`tag=bustedboard-20`); affiliate disclosure added (FTC required)
+- **Mobile fixes** — card action buttons visible on touch; ad banner `col-span-full`
+- **DB migration 0006 applied** — `subscriptions` table live in Neon ✓
+- **Competitive research** — 103-agent deep research confirmed: JustWatch now sells "Sponsored Recommendations" (trust gap), Trakt doubled prices Feb 2025 (user exodus now), Tubi proved AI discovery demand but locked to their catalog
+
+### Completed by Sam today
+
+- **Amazon Associates signup** ✓ — tag `bustedboard-20` registered at affiliate-program.amazon.com
+
+### Priority queue for next session
+
+**Must do before launch:**
+
+1. **Stripe** — create account → 2 products ($3/mo, $25/yr) → 5 env vars in Vercel → register webhook. Full checklist in session 21 entry below.
+2. **Deploy** — pushing the current branch or triggering a Vercel redeploy to get all session 20–23 changes live.
+
+**High-impact, low-effort:**
+3. **r/trakt post** — draft is in session 21 conversation. Post when TV sync is confirmed working. This is the fastest user acquisition path right now (Trakt user exodus is live).
+4. **Google Search Console** — add property, submit `/sitemap.xml`. Compounds over weeks.
+
+**Nice to have:**
+5. `public/og-default.png` (1200×630) — needed for social card previews. Canva, ~10 min.
+6. Custom domain — update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel.
+
+---
+
+## 2026-06-14 (session 23 — SEO & marketing automation code)
+
+### Done
+
+- **OG metadata + canonicals** on `/browse` and `/top/[platform]` pages — `openGraph`, `twitter: { card: "summary_large_image" }`, and `alternates.canonical` added to both pages. When `og-default.png` is created and `APP_URL` is updated to a custom domain, social cards and canonical URLs update automatically.
+- **BreadcrumbList JSON-LD** injected in `/browse` and `/top/[platform]` pages — valid schema.org structured data for Google rich results, no DB query needed.
+- **Freshness signal** on `/top/[platform]` — "Updated [Month Year]" line below the h1; updates on every ISR revalidation.
+- **Sitemap improved** — replaced catalog service ID source with `PLATFORM_REGISTRY` (consistent with `generateStaticParams`); changed changeFrequency from `daily` → `weekly` for platform/browse pages, `daily` → `monthly` for home.
+- **Affiliate disclosure** in `MovieDetailModal` — small text below the "Watch on [Platform]" button; FTC-required.
+- **No duplicate constants** — removed newly-created `site.ts`; all URL references use `APP_URL` from existing `src/lib/config/app.ts`.
+
+### Needs Sam's action (manual, no code)
+
+- **Create `public/og-default.png`** (1200×630px) — dark background, "Busted Board" wordmark, tagline "AI recommendations. No sponsored results." Required before OG image metadata is live. Use Canva (free).
+- **Get a custom domain** — `bustedboard.com` or similar (~$12/yr). Update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel.
+- **Google Search Console** — submit `https://[domain]/sitemap.xml` after domain is live.
+- **Reddit posts** — r/trakt (day 1), r/cordcutters (day 3), r/streaming (day 5). Stagger; disclose you're the maker.
+- **Buffer** — load 30 posts (one per platform × variety of hooks), set to drip daily.
+- **Amazon Associates** — confirm tag `bustedboard-20` is active before linking from Reddit.
+- **Product Hunt** — week 2, after Search Console is live. Needs gallery screenshots + demo GIF + active launch-day presence.
+
+---
+
+## 2026-06-14 (session 22 — feed UX polish)
+
+### Done
+
+- **Surprise Me grid** — cards were rendering full-width with `aspect-[2/3]` posters filling the viewport; changed container from `space-y-4` to `grid grid-cols-3 gap-3` so all 3 cards show at movie-poster size
+- **Feed sticky command bar** — search + Gem/card-size/refresh icons now live in a single sticky row that stays locked at top while scrolling; title "Busted Board" scrolls away with content
+- **Platform chips → horizontal scroll** — chips row no longer wraps; single scrollable row with `scrollbar-hide` CSS utility added to `globals.css`
+- All changes shipped in the same commit as session 21's Letterboxd/SEO work (parallel sessions merged)
+
+### Open
+
+_(no new items — see session 21 open tasks above)_
+
+---
+
 ## 2026-06-14 (session 21 — growth tasks: Letterboxd import, SEO, deploy)
 
 ### Done
@@ -57,6 +129,26 @@ what's next, and any decisions made. Keep entries terse.
 
 - Run "Sync TV Shows" in Settings (TV catalog is still unpopulated).
 - Vercel env vars still needed: see session 19 list.
+
+---
+
+## 2026-06-14 (session 20b — Stripe graceful degradation + Letterboxd import)
+
+### Done
+
+- **Stripe graceful degradation**: `stripe-server.ts` now uses lazy client initialization — importing the module no longer throws if `STRIPE_SECRET_KEY` is absent. `isStripeEnabled()` guard added to all billing routes and the watchlist freemium gate. App works normally until Stripe env vars are set.
+- **Letterboxd CSV import**:
+  - `src/lib/csv-parser.ts` — shared CSV parsing utilities (quoted fields, CRLF)
+  - `src/lib/letterboxd-import.ts` — Letterboxd ratings+watchlist parser (0.5–5.0 → 1–5 scale, handles `ratings.csv` and `watched.csv`)
+  - `src/app/api/import/letterboxd/route.ts` — loads full catalog once, matches by title+year ±1 (no TMDB API calls); `notFound` for titles not yet synced
+  - `src/components/settings/LetterboxdImportSection.tsx` — settings section, client-side validation before upload
+- **SEO improvements** to browse pages: OG metadata, canonical URLs, JSON-LD breadcrumbs, `SITE_URL` config in `src/lib/config/site.ts`
+- All: typecheck clean, ESLint clean
+
+### Needs before Stripe goes live (unchanged)
+
+- Run `npx drizzle-kit migrate` (subscriptions table, migration `0006_famous_luminals.sql` is ready)
+- Add 5 Stripe env vars to Vercel + create products + register webhook (see setup guide)
 
 ---
 

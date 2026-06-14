@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicMovieGrid } from "@/components/browse/PublicMovieGrid";
 import { PLATFORM_REGISTRY, getPlatformBySlug } from "@/lib/platforms";
+import { APP_URL } from "@/lib/config/app";
 
 export const revalidate = 3600;
 
@@ -14,9 +15,18 @@ export async function generateMetadata({ params }: { params: Promise<{ platform:
   const { platform: slug } = await params;
   const platform = getPlatformBySlug(slug);
   if (!platform) return {};
+  const description = `Top-rated movies and shows available on ${platform.name} right now. Find what to watch tonight.`;
   return {
     title: `Best Movies on ${platform.name} — Busted Board`,
-    description: `Top-rated movies and shows available on ${platform.name} right now. Find what to watch tonight.`,
+    description,
+    alternates: { canonical: `/top/${slug}` },
+    openGraph: {
+      title: `Best Movies on ${platform.name} — Busted Board`,
+      description,
+      url: `${APP_URL}/top/${slug}`,
+      images: [{ url: "/og-default.png", width: 1200, height: 630 }],
+    },
+    twitter: { card: "summary_large_image" as const },
   };
 }
 
@@ -25,8 +35,23 @@ export default async function PlatformBrowsePage({ params }: { params: Promise<{
   const platform = getPlatformBySlug(slug);
   if (!platform) notFound();
 
+  const updatedLabel = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Browse", item: `${APP_URL}/browse` },
+              { "@type": "ListItem", position: 2, name: platform.name, item: `${APP_URL}/top/${slug}` },
+            ],
+          }),
+        }}
+      />
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -62,9 +87,10 @@ export default async function PlatformBrowsePage({ params }: { params: Promise<{
         </nav>
 
         <h1 className="text-2xl font-bold mb-2">Best on {platform.name}</h1>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-sm text-muted-foreground mb-1">
           Top-rated movies and shows available on {platform.name} right now.
         </p>
+        <p className="text-xs text-muted-foreground/60 mb-6">Updated {updatedLabel}</p>
 
         {/* Platform switcher */}
         <div className="flex gap-2 flex-wrap mb-6">

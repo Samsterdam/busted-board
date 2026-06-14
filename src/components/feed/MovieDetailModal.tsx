@@ -140,6 +140,9 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
               >
                 Watch on {item.platforms[0]}
               </a>
+              <p className="text-[10px] text-muted-foreground/60">
+                Some links are affiliate links — we may earn a small commission at no extra cost to you.
+              </p>
             </div>
           )}
 

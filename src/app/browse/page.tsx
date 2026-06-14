@@ -2,17 +2,40 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { PublicMovieGrid } from "@/components/browse/PublicMovieGrid";
 import { PLATFORM_REGISTRY } from "@/lib/platforms";
+import { APP_URL } from "@/lib/config/app";
 
 export const revalidate = 3600;
 
+const DESCRIPTION = "Top-rated movies and TV shows available on streaming services right now. Find what to watch tonight.";
+
 export const metadata = {
   title: "Browse Top Movies & TV — Busted Board",
-  description: "Top-rated movies and TV shows available on streaming services right now. Find what to watch tonight.",
+  description: DESCRIPTION,
+  alternates: { canonical: "/browse" },
+  openGraph: {
+    title: "Browse Top Movies & TV — Busted Board",
+    description: DESCRIPTION,
+    url: `${APP_URL}/browse`,
+    images: [{ url: "/og-default.png", width: 1200, height: 630 }],
+  },
+  twitter: { card: "summary_large_image" as const },
 };
 
 export default function BrowsePage() {
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Browse", item: `${APP_URL}/browse` },
+            ],
+          }),
+        }}
+      />
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
