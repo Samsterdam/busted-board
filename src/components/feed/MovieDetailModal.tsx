@@ -77,8 +77,8 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
+          <RibbonBadge ribbon={item.ribbon} />
           <div className="absolute bottom-3 left-3 right-3">
-            <RibbonBadge ribbon={item.ribbon} />
             <h2 className="text-lg font-bold leading-tight">{item.title}</h2>
             <p className="text-sm text-muted-foreground">{item.year} · {item.originalLanguage.toUpperCase()}</p>
           </div>
