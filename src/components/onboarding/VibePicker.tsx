@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const VIBE_OPTIONS = [
   "slow burn", "feel-good", "cerebral", "action-packed", "dark comedy",
@@ -18,19 +18,21 @@ export function VibePicker() {
     );
   }
 
-  async function saveVibes(vibes: string[]) {
-    if (vibes.length === 0) return;
-    await fetch("/api/vibe-tags", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tags: vibes }),
-    });
-  }
-
-  // Save when user navigates away (called by parent on finish)
-  if (typeof window !== "undefined") {
-    (window as unknown as Record<string, unknown>).__savePendingVibes = () => saveVibes(selected);
-  }
+  // Expose a save hook the parent (SetupWizard) calls when the user finishes.
+  // Registered in an effect (not during render) and torn down on unmount; it
+  // re-binds whenever `selected` changes so it always saves the latest picks.
+  useEffect(() => {
+    const w = window as unknown as Record<string, unknown>;
+    w.__savePendingVibes = async () => {
+      if (selected.length === 0) return;
+      await fetch("/api/vibe-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags: selected }),
+      });
+    };
+    return () => { delete w.__savePendingVibes; };
+  }, [selected]);
 
   return (
     <div>

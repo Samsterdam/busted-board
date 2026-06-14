@@ -1,10 +1,9 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useState } from "react";
 import { activeProviders } from "@/lib/ads/registry";
 import { AD_ENV } from "@/lib/ads/env";
-import { adsAllowed } from "@/lib/ads/consent";
+import { useAdsAllowed } from "@/lib/ads/use-ads-consent";
 
 /**
  * Injects the loader/init scripts for every active ad provider, once, at the
@@ -12,14 +11,7 @@ import { adsAllowed } from "@/lib/ads/consent";
  * gate: nothing loads until ads are allowed.
  */
 export function AdScripts() {
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    setAllowed(adsAllowed());
-    const onChange = () => setAllowed(adsAllowed());
-    window.addEventListener("bb-consent-change", onChange);
-    return () => window.removeEventListener("bb-consent-change", onChange);
-  }, []);
+  const allowed = useAdsAllowed();
 
   if (!allowed) return null;
 

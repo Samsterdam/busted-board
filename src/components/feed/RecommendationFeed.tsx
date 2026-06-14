@@ -21,12 +21,11 @@ const AD_INTERVAL = 8; // insert an ad band after every N cards (only when ads a
 const ADS_ACTIVE = slotHasActiveProvider("feed-banner");
 
 interface Props {
-  userId: string;
   ratingCount: number;
   platforms: { name: string; tmdbId: number }[];
 }
 
-export function RecommendationFeed({ userId, ratingCount, platforms }: Props) {
+export function RecommendationFeed({ ratingCount, platforms }: Props) {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -145,6 +144,9 @@ export function RecommendationFeed({ userId, ratingCount, platforms }: Props) {
       .catch(() => null);
   }, [feed]);
 
+  // Fetch-on-mount. loadFeed() sets loading=true synchronously, but `loading`
+  // already starts true, so this is a no-op re-set, not a cascading render.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
   const loadMore = useCallback(async () => {
@@ -190,7 +192,8 @@ export function RecommendationFeed({ userId, ratingCount, platforms }: Props) {
     const inList = watchlistIds.has(item.tmdbId);
     setWatchlistIds((prev) => {
       const next = new Set(prev);
-      inList ? next.delete(item.tmdbId) : next.add(item.tmdbId);
+      if (inList) next.delete(item.tmdbId);
+      else next.add(item.tmdbId);
       return next;
     });
 

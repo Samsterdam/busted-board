@@ -28,7 +28,6 @@ export default async function FeedPage() {
   return (
     <PageShell>
       <RecommendationFeed
-        userId={userId}
         ratingCount={allRatings.length}
         platforms={platformChips}
       />

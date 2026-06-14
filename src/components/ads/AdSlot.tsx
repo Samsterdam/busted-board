@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { activeProviders } from "@/lib/ads/registry";
 import { AD_ENV } from "@/lib/ads/env";
 import type { AdProvider, AdSlotName, SlotSpec } from "@/lib/ads/types";
-import { adsAllowed } from "@/lib/ads/consent";
+import { useAdsAllowed } from "@/lib/ads/use-ads-consent";
 
 interface Props {
   name: AdSlotName;
@@ -35,14 +35,7 @@ function toStyle(style?: Record<string, string>): CSSProperties | undefined {
  */
 export function AdSlot({ name, className = "" }: Props) {
   const ref = useRef<HTMLDivElement | HTMLModElement | null>(null);
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    setAllowed(adsAllowed());
-    const onChange = () => setAllowed(adsAllowed());
-    window.addEventListener("bb-consent-change", onChange);
-    return () => window.removeEventListener("bb-consent-change", onChange);
-  }, []);
+  const allowed = useAdsAllowed();
 
   const resolved = resolveSlot(name);
 

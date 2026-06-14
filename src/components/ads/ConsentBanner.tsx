@@ -1,26 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { readConsent, writeConsent, requireConsent } from "@/lib/ads/consent";
+import { writeConsent } from "@/lib/ads/consent";
+import { useNeedsConsent } from "@/lib/ads/use-ads-consent";
 
 /**
  * Lightweight consent banner. Renders only when consent is required and the
  * user hasn't decided yet. On decision it stores a cookie and dispatches a
- * `bb-consent-change` event so <AdScripts> can react without a reload.
+ * `bb-consent-change` event — which both re-hides this banner (via
+ * useNeedsConsent) and lets <AdScripts> react, all without a reload.
  */
 export function ConsentBanner() {
-  const [visible, setVisible] = useState(false);
+  const needsConsent = useNeedsConsent();
 
-  useEffect(() => {
-    if (requireConsent() && readConsent() === null) setVisible(true);
-  }, []);
-
-  if (!visible) return null;
+  if (!needsConsent) return null;
 
   function decide(value: "granted" | "denied") {
     writeConsent(value);
     window.dispatchEvent(new CustomEvent("bb-consent-change", { detail: value }));
-    setVisible(false);
   }
 
   return (
