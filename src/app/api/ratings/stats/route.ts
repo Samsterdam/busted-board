@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ratings } from "@/lib/schema";
-import { eq, count } from "drizzle-orm";
-import { RATING_MIN, RATING_MAX } from "@/lib/config/ratings";
+import { eq, count, and } from "drizzle-orm";
+import { RATING_MIN, RATING_MAX, RATING_SOURCE_USER } from "@/lib/config/ratings";
 
 type Distribution = Record<number, number>;
 
@@ -14,7 +14,7 @@ export async function GET() {
   const rows = await db
     .select({ rating: ratings.rating, count: count() })
     .from(ratings)
-    .where(eq(ratings.userId, userId))
+    .where(and(eq(ratings.userId, userId), eq(ratings.source, RATING_SOURCE_USER)))
     .groupBy(ratings.rating);
 
   const distribution: Distribution = {};

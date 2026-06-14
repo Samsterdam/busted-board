@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ratings } from "@/lib/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { RATING_MIN, RATING_MAX, NOTES_MAX_LENGTH, TITLE_MAX_LENGTH } from "@/lib/config/ratings";
+import { RATING_MIN, RATING_MAX, NOTES_MAX_LENGTH, TITLE_MAX_LENGTH, RATING_SOURCE_USER } from "@/lib/config/ratings";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const rows = await db
     .select()
     .from(ratings)
-    .where(eq(ratings.userId, userId))
+    .where(and(eq(ratings.userId, userId), eq(ratings.source, RATING_SOURCE_USER)))
     .orderBy(desc(ratings.createdAt))
     .limit(limit)
     .offset(offset);

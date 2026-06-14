@@ -5,6 +5,19 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 11)
+
+### Done
+
+- **Fixed: quiz verdicts no longer appear in Watched tab** — added `source` column (`"user"` | `"quiz"`, default `"user"`) to the `ratings` table. Quiz POST inserts tag rows `source: "quiz"`; the Watched tab, ratings GET endpoint, and stats route all filter to `source = "user"`. Taste profile and recommendation engine exclusion still use all ratings (quiz verdicts are genuine signals). Migration `0003_burly_bushwacker.sql` generated and applied. New constants `RATING_SOURCE_USER`/`RATING_SOURCE_QUIZ` in `src/lib/config/ratings.ts`.
+- **Data caveat**: existing quiz rows (Office Romance, Backrooms, Project Hail Mary) received `source='user'` from the migration default — no reliable retroactive identifier. Sam to manually delete them from the Watched tab.
+
+### Next / open
+- Delete the 3 known quiz-generated entries from the Watched tab (Office Romance 1★, Backrooms 5★, Project Hail Mary 5★).
+- Carryover from prior sessions still open (see below).
+
+---
+
 ## 2026-06-14 (session 10)
 
 ### Done
