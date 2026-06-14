@@ -7,8 +7,8 @@ export const metadata = {
 
 const LAST_UPDATED = "June 14, 2026";
 
-// TODO: replace with your actual contact email before going live
-const CONTACT_EMAIL = "your-email@example.com";
+const CONTACT_FORM_URL =
+  "https://docs.google.com/forms/d/101tTiA5tvVENwvAxU-JJBDu89NIY4KJdN1TRArPEa2w/viewform";
 
 export default function TermsPage() {
   return (
@@ -49,9 +49,9 @@ export default function TermsPage() {
           <p>
             You sign in using a Google account. You are responsible for maintaining the
             security of your Google credentials and for all activity that occurs under your
-            account. Notify us immediately at{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="underline hover:text-foreground">
-              {CONTACT_EMAIL}
+            account. Notify us immediately via our{" "}
+            <a href={CONTACT_FORM_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+              contact form
             </a>{" "}
             if you suspect unauthorised access.
           </p>
@@ -191,9 +191,9 @@ export default function TermsPage() {
 
         <Section title="12. Contact">
           <p>
-            Questions about these Terms? Email us at{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="underline hover:text-foreground">
-              {CONTACT_EMAIL}
+            Questions about these Terms? Use our{" "}
+            <a href={CONTACT_FORM_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+              contact form
             </a>
             .
           </p>

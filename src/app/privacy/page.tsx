@@ -7,8 +7,8 @@ export const metadata = {
 
 const LAST_UPDATED = "June 14, 2026";
 
-// TODO: replace with your actual contact email before going live
-const CONTACT_EMAIL = "your-email@example.com";
+const CONTACT_FORM_URL =
+  "https://docs.google.com/forms/d/101tTiA5tvVENwvAxU-JJBDu89NIY4KJdN1TRArPEa2w/viewform";
 
 export default function PrivacyPage() {
   return (
@@ -176,9 +176,9 @@ export default function PrivacyPage() {
             <li>Non-discrimination for exercising your CCPA rights.</li>
           </ul>
           <p className="mt-3 text-sm">
-            To exercise any of these rights, contact us at{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="underline hover:text-foreground">
-              {CONTACT_EMAIL}
+            To exercise any of these rights, use our{" "}
+            <a href={CONTACT_FORM_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+              contact form
             </a>
             .
           </p>
@@ -202,9 +202,9 @@ export default function PrivacyPage() {
 
         <Section title="9. Contact">
           <p>
-            For privacy-related questions or to exercise your rights, email us at{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="underline hover:text-foreground">
-              {CONTACT_EMAIL}
+            For privacy-related questions or to exercise your rights, use our{" "}
+            <a href={CONTACT_FORM_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+              contact form
             </a>
             .
           </p>
