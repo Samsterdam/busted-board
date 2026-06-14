@@ -1,4 +1,4 @@
-// Curated "browse" collections and TMDB genre maps.
+// Curated "browse" collections and TMDB genre maps. (cache-bust: 804ce56)
 //
 // Each collection maps a human-facing category to a set of TMDB `discover`
 // query params. Keeping these here (rather than inline in routes) is the single
