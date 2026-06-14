@@ -8,7 +8,7 @@ import {
   RATE_LIMIT_FEED_RPH,
   RATE_LIMIT_GENERAL_RPH,
 } from "@/lib/config/rate-limits";
-import { MS_PER_SECOND } from "@/lib/config/durations";
+const MS_PER_SECOND = 1_000;
 
 // Edge-safe instance: built from authConfig WITHOUT the Drizzle adapter, so
 // the DB driver never enters the edge bundle. JWT verification only.
