@@ -5,6 +5,16 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 4)
+
+### Done
+- **Fixed production site** (`https://busted-board.vercel.app`): `AUTH_URL` in Vercel env vars was set to `https://example.com` (cleared at some point), causing all visits to redirect to localhost. Reset to `https://busted-board.vercel.app` and redeployed — site is live and working.
+
+### Next / open
+- Carryover from session 3 still open (see below).
+
+---
+
 ## 2026-06-14 (session 3)
 
 ### Done
