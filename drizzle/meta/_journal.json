@@ -8,6 +8,13 @@
       "when": 1781306384780,
       "tag": "0000_funny_nuke",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781458201673,
+      "tag": "0001_tearful_shadow_king",
+      "breakpoints": true
     }
   ]
 }

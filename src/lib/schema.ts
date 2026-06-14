@@ -75,6 +75,26 @@ export const watchlist = pgTable("watchlist", {
   addedAt: timestamp("added_at").defaultNow(),
 });
 
+// "Seen it" as a signal independent of rating: a watched-but-not-necessarily-
+// rated title. Drops out of recommendations and feeds the taste profile as a
+// weaker signal than a star rating. Rated titles live in `ratings`; this table
+// is for the rating-less "I've watched this" mark from the feed card.
+export const watched = pgTable(
+  "watched",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    tmdbId: integer("tmdb_id").notNull(),
+    tmdbType: text("tmdb_type").notNull(),
+    title: text("title").notNull(),
+    posterPath: text("poster_path"),
+    seenAt: timestamp("seen_at").defaultNow(),
+  },
+  (t) => [unique("watched_user_media_unique").on(t.userId, t.tmdbId, t.tmdbType)]
+);
+
 export const dismissedItems = pgTable("dismissed_items", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
