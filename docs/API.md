@@ -197,6 +197,42 @@ Browse curated or filtered content.
 
 ---
 
+### `POST /api/recommendations/search`
+Auth: ✓ · Rate limit: general (300/hr)
+
+TMDB multi-search with no AI ranking. Returns up to 8 movie/TV results.
+
+**Request body**
+```json
+{ "query": "Inception" }
+```
+
+**Response**
+```json
+{
+  "results": [
+    { "tmdbId": 27205, "tmdbType": "movie", "title": "Inception", "year": "2010",
+      "posterUrl": "https://...", "overview": "...", "originalLanguage": "en", "voteCount": 35000 }
+  ],
+  "similar": [],
+  "explanation": "Results for \"Inception\""
+}
+```
+
+Returns `{ "results": [], "similar": [], "explanation": null }` on empty query or error.
+
+---
+
+### `GET /api/recommendations/discovery`
+Auth: ✓ · Rate limit: general (300/hr)
+
+Curated discovery items scoped to the user's streaming platforms. Returns
+`{ "discovery": [] }` if the user has no platforms configured.
+
+**Response** `{ "discovery": [ /* FeedItem[] */ ] }`
+
+---
+
 ## Taste Profile
 
 ### `GET /api/taste-profile/analyze`
@@ -370,6 +406,32 @@ entirely by the NextAuth library. Not documented here; see the
 
 ---
 
+## TMDB Passthrough
+
+Internal routes that proxy TMDB directly. Used by the client for search
+autocomplete and quiz seeding.
+
+### `GET /api/tmdb/search`
+Auth: ✓ · Rate limit: general (300/hr)
+
+Raw TMDB `searchMulti` passthrough. Used for rating-search autocomplete.
+
+**Query params**
+- `q` — search string
+
+**Response** `{ "results": [ /* raw TMDB multi-search result objects */ ] }`
+
+---
+
+### `GET /api/tmdb/seed-movies`
+Auth: ✓ · Rate limit: general (300/hr)
+
+Trending movies with genres attached. Used to seed the initial rating quiz.
+
+**Response** `{ "movies": [ /* TmdbMovie[] with genres array */ ] }`
+
+---
+
 ## Admin
 
 ### `POST /api/admin/seed-platforms`
@@ -377,3 +439,28 @@ Auth: ✓ (same JWT gate — no additional role check)
 
 Seeds the `platforms` table from `PLATFORM_REGISTRY`. Dev/admin use only.
 Not linked from the UI.
+
+---
+
+### `POST /api/admin/sync-catalog`
+Auth: ✓ + session email must match `ADMIN_EMAIL` + `x-sync-secret` header must equal `CATALOG_SYNC_SECRET`
+Rate limit: general (300/hr)
+
+Fans out a streaming catalog sync across all platforms in parallel. For each
+platform, fetches current titles from MOTN or Watchmode, upserts `media` rows,
+and replaces `mediaLinks`. Clears all `feedCache` rows on success so users
+receive fresh recommendations.
+
+**Query params**
+- `slug` — optional; restrict sync to a single platform (e.g. `?slug=netflix`)
+
+**Headers**
+- `x-sync-secret: <value of CATALOG_SYNC_SECRET>`
+
+**Response**
+```json
+{ "synced": 1250, "platforms": { "netflix": 100, "prime": 98, "tubi": 100, "...": "..." } }
+```
+
+Returns `401` if unauthenticated, `403` if authenticated but not `ADMIN_EMAIL`,
+`401` if the secret header is wrong.

@@ -214,8 +214,10 @@ export const media = pgTable(
     // Populated by catalog sync from Movie of the Night / Watchmode:
     overview: text("overview"),
     originalLanguage: text("original_language"),
-    motnRating: integer("motn_rating"),   // 0–100 aggregated rating from MOTN
-    syncedAt: timestamp("synced_at"),     // last time populated from external catalog
+    motnRating: integer("motn_rating"),     // 0–100 aggregated rating from MOTN
+    seasonCount: integer("season_count"),   // TV series only
+    episodeCount: integer("episode_count"), // TV series only
+    syncedAt: timestamp("synced_at"),       // last time populated from external catalog
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => [unique("media_tmdb_unique").on(t.tmdbId, t.tmdbType)]
@@ -257,4 +259,19 @@ export const mediaLinks = pgTable(
     // index above leads with media_id and won't.
     index("media_links_platform_region_idx").on(t.platformId, t.region),
   ]
+);
+
+// Tracks when each platform+type was last synced from an external catalog API.
+// Used to enforce per-platform cooldowns and track monthly MOTN quota spend.
+export const catalogSyncLog = pgTable(
+  "catalog_sync_log",
+  {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull(),
+    mediaType: text("media_type").notNull(), // "movie" | "tv"
+    syncedAt: timestamp("synced_at").notNull().defaultNow(),
+    itemCount: integer("item_count").notNull().default(0),
+    callsUsed: integer("calls_used").notNull().default(0),
+  },
+  (t) => [unique("catalog_sync_log_unique").on(t.slug, t.mediaType)]
 );

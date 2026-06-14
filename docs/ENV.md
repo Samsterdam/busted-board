@@ -46,6 +46,24 @@ Do not store secrets here.
 
 ---
 
+## Optional — Catalog Sync
+
+Powers the pre-populated streaming catalog used by the recommendation engine.
+When the catalog is populated, the engine can serve platform-filtered results
+without making per-request TMDB watch-provider calls. Without these vars the
+sync endpoint still exists but the engine falls back to live TMDB lookups only.
+
+| Variable | Where to get it | Effect when absent |
+|---|---|---|
+| `STREAMING_AVAILABILITY_API_KEY` | [movieofthenight.com](https://movieofthenight.com) → Dashboard → API Key | Catalog sync skips all MOTN platforms (Netflix, Prime, Disney, Max, Hulu, Apple TV+, Roku, Peacock, Paramount+, Tubi, Pluto TV) |
+| `WATCHMODE_API_KEY` | [api.watchmode.com](https://api.watchmode.com/) | Catalog sync skips Watchmode platforms (YouTube Free, Hoopla, Plex) |
+| `CATALOG_SYNC_SECRET` | Any random string (`openssl rand -base64 32`) | Sync endpoint accepts requests without the secret header |
+| `ADMIN_EMAIL` | Your Google account email | Any authenticated user can trigger a sync |
+| `NEXT_PUBLIC_SHOW_ADMIN` | Set to `"true"` | Admin "Sync Catalog" button hidden in Settings UI |
+| `NEXT_PUBLIC_CATALOG_SYNC_SECRET` | Same value as `CATALOG_SYNC_SECRET` | Client-side sync button can't send the auth header |
+
+---
+
 ## Vercel Setup Checklist
 
 When provisioning a new deployment:
@@ -61,6 +79,12 @@ When provisioning a new deployment:
 5. **`AUTH_URL`:** set to `https://<your-vercel-domain>`.
 6. **Run migrations** after first deploy: `npm run db:migrate` (uses
    `DATABASE_URL_UNPOOLED`).
+7. **Catalog sync (optional but recommended):** set `STREAMING_AVAILABILITY_API_KEY`,
+   `WATCHMODE_API_KEY`, `CATALOG_SYNC_SECRET`, `ADMIN_EMAIL`, `NEXT_PUBLIC_SHOW_ADMIN=true`,
+   and `NEXT_PUBLIC_CATALOG_SYNC_SECRET`. Then trigger an initial sync via
+   Settings → Admin → Sync Catalog. Without a sync the recommendation engine
+   falls back to TMDB discover buckets only (still functional, just slower to
+   resolve platform availability per-request).
 
 ---
 
@@ -92,4 +116,12 @@ UPSTASH_REDIS_REST_TOKEN=your_upstash_token
 
 # Ads
 NEXT_PUBLIC_AD_PRIMARY=off
+
+# Catalog sync (optional — see docs/ENV.md for details)
+STREAMING_AVAILABILITY_API_KEY=your_motn_key
+WATCHMODE_API_KEY=your_watchmode_key
+CATALOG_SYNC_SECRET=your_random_secret
+ADMIN_EMAIL=your_google_email@gmail.com
+NEXT_PUBLIC_SHOW_ADMIN=true
+NEXT_PUBLIC_CATALOG_SYNC_SECRET=your_random_secret
 ```

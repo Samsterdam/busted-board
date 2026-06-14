@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { APP_URL, APP_SHARE_TEXT } from "@/lib/config/app";
+import { MS_PER_DAY, MS_PER_HOUR } from "@/lib/config/durations";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
@@ -44,9 +45,44 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  const [syncing, setSyncing] = useState<"movie" | "tv" | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<{
+    motnCallsThisMonth: number;
+    motnMonthlyBudget: number;
+    lastSynced: Record<string, { syncedAt: string; itemCount: number }>;
+  } | null>(null);
   const isAdmin = process.env.NEXT_PUBLIC_SHOW_ADMIN === "true";
+  // Captured at render time so cooldown checks are pure (no Date.now() in component functions)
+  const [nowMs, setNowMs] = useState(0);
+
+  const COOLDOWN_MS = MS_PER_DAY;
+  const HOURS_PER_DAY = MS_PER_DAY / MS_PER_HOUR;
+
+  function lastSyncedLabel(key: string): string {
+    const row = syncStatus?.lastSynced?.[key];
+    if (!row) return "Never synced";
+    const diff = nowMs - new Date(row.syncedAt).getTime();
+    const hours = Math.floor(diff / MS_PER_HOUR);
+    if (hours < 1) return `Synced < 1 hour ago (${row.itemCount} titles)`;
+    if (hours < HOURS_PER_DAY) return `Synced ${hours}h ago (${row.itemCount} titles)`;
+    return `Synced ${Math.floor(hours / HOURS_PER_DAY)}d ago (${row.itemCount} titles)`;
+  }
+
+  function isCoolingDown(key: string): boolean {
+    if (nowMs === 0) return false; // not yet initialized
+    const row = syncStatus?.lastSynced?.[key];
+    if (!row) return false;
+    return nowMs - new Date(row.syncedAt).getTime() < COOLDOWN_MS;
+  }
+
+  function loadSyncStatus() {
+    const capturedNow = Date.now();
+    fetch("/api/admin/sync-status")
+      .then((r) => r.json())
+      .then((d) => { setSyncStatus(d); setNowMs(capturedNow); })
+      .catch(() => null);
+  }
 
   useEffect(() => {
     Promise.all([
@@ -57,7 +93,8 @@ export default function SettingsPage() {
       setCountry(prefs.country ?? "US");
       setPreferCaptions(!!prefs.preferCaptions);
     }).catch(() => null).finally(() => setLoading(false));
-  }, []);
+    if (isAdmin) loadSyncStatus();
+  }, [isAdmin]);
 
   async function save() {
     setSaving(true);
@@ -96,25 +133,26 @@ export default function SettingsPage() {
     }
   }
 
-  const handleSyncCatalog = useCallback(async (slug?: string) => {
-    setSyncing(true);
+  const handleSyncCatalog = useCallback(async (type: "movie" | "tv") => {
+    setSyncing(type);
     setSyncResult(null);
     try {
       const secret = process.env.NEXT_PUBLIC_CATALOG_SYNC_SECRET ?? "";
-      const url = slug ? `/api/admin/sync-catalog?slug=${slug}` : "/api/admin/sync-catalog";
-      const res = await fetch(url, {
+      const res = await fetch(`/api/admin/sync-catalog?type=${type}`, {
         method: "POST",
         headers: { "x-sync-secret": secret },
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error ?? "Sync failed"); return; }
-      const summary = `Synced ${data.synced} movies across ${Object.keys(data.platforms ?? {}).length} platforms.`;
+      const skipped = Object.values(data.platforms ?? {}).filter((p: unknown) => (p as { skipped: boolean }).skipped).length;
+      const summary = `Synced ${data.synced} ${type === "movie" ? "movies" : "TV shows"}. ${data.callsUsed} API calls used. ${skipped > 0 ? `${skipped} platforms skipped (cooldown or budget).` : ""}`;
       setSyncResult(summary);
-      toast.success(summary);
+      toast.success(`Synced ${data.synced} ${type === "movie" ? "movies" : "TV shows"}`);
+      loadSyncStatus();
     } catch {
       toast.error("Catalog sync failed.");
     } finally {
-      setSyncing(false);
+      setSyncing(null);
     }
   }, []);
 
@@ -234,22 +272,50 @@ export default function SettingsPage() {
             <h2 id="admin-heading" className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
               Admin
             </h2>
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <p className="text-sm font-medium">Sync Streaming Catalog</p>
-              <p className="text-xs text-muted-foreground">
-                Fetches movies from Movie of the Night and Watchmode for all platforms and stores them in the database. Clears all user feed caches. Budget: ~66 API calls (of 500/month).
-              </p>
+            <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-1">Sync Streaming Catalog</p>
+                {syncStatus && (
+                  <p className="text-xs text-muted-foreground">
+                    MOTN API: {syncStatus.motnCallsThisMonth} / {syncStatus.motnMonthlyBudget} calls used this month
+                  </p>
+                )}
+              </div>
+
               {syncResult && (
                 <p className="text-xs text-green-400">{syncResult}</p>
               )}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleSyncCatalog()}
-                disabled={syncing}
-              >
-                {syncing ? "Syncing…" : "Sync All Platforms"}
-              </Button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground">{lastSyncedLabel("all:movie")}</p>
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={() => handleSyncCatalog("movie")}
+                    disabled={syncing !== null || isCoolingDown("all:movie")}
+                    title={isCoolingDown("all:movie") ? "Wait 24h between movie syncs" : "Sync movies (~55 API calls)"}
+                  >
+                    {syncing === "movie" ? "Syncing…" : isCoolingDown("all:movie") ? "Movies (cooldown)" : "Sync Movies"}
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground">{lastSyncedLabel("all:tv")}</p>
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs"
+                    onClick={() => handleSyncCatalog("tv")}
+                    disabled={syncing !== null || isCoolingDown("all:tv")}
+                    title={isCoolingDown("all:tv") ? "Wait 24h between TV syncs" : "Sync TV shows (~55 API calls)"}
+                  >
+                    {syncing === "tv" ? "Syncing…" : isCoolingDown("all:tv") ? "TV (cooldown)" : "Sync TV Shows"}
+                  </Button>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground">
+                Each sync: ~55 MOTN API calls. Cooldown: 24h per type. Budget reserve: 50 calls/month.
+              </p>
             </div>
           </section>
         )}
