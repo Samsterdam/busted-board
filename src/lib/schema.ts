@@ -10,6 +10,8 @@ import {
   unique,
   index,
 } from "drizzle-orm/pg-core";
+// schema.ts intentionally stays as the single schema source to avoid circular
+// FK imports. Split into sub-files when this grows past 500 lines.
 import type { AdapterAccountType } from "next-auth/adapters";
 import { RATING_SOURCE_USER } from "@/lib/config/ratings";
 
@@ -289,4 +291,47 @@ export const catalogSyncLog = pgTable(
     callsUsed: integer("calls_used").notNull().default(0),
   },
   (t) => [unique("catalog_sync_log_unique").on(t.slug, t.mediaType)]
+);
+
+// --- Community free links ---------------------------------------------------
+// User-submitted URLs pointing to free/legal streaming sources. Domain-validated
+// against DOMAIN_ALLOWLIST at submission time; no admin queue needed.
+
+export const communityLinks = pgTable(
+  "community_links",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    tmdbId: integer("tmdb_id").notNull(),
+    tmdbType: text("tmdb_type").notNull(),
+    url: text("url").notNull(),
+    domain: text("domain").notNull(),
+    label: text("label"),
+    // V1 always writes "approved"; kept as admin escape hatch for future use.
+    status: text("status").notNull().default("approved"),
+    flagCount: integer("flag_count").notNull().default(0),
+    submittedAt: timestamp("submitted_at").defaultNow(),
+  },
+  (t) => [
+    unique("community_links_url_unique").on(t.tmdbId, t.tmdbType, t.url),
+    index("community_links_media_idx").on(t.tmdbId, t.tmdbType),
+  ]
+);
+
+// One row per (user, link) — prevents a single user from filling the flag threshold.
+export const communityLinkFlags = pgTable(
+  "community_link_flags",
+  {
+    id: serial("id").primaryKey(),
+    linkId: integer("link_id")
+      .notNull()
+      .references(() => communityLinks.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    flaggedAt: timestamp("flagged_at").defaultNow(),
+  },
+  (t) => [unique("community_link_flags_unique").on(t.linkId, t.userId)]
 );
