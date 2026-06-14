@@ -5,6 +5,46 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14
+
+### Done
+- **Pushed the backlog to `origin/master`** — the 06-12 cleanup (19 commits) plus
+  the fixes below. CI green on every push; the first full-history gitleaks run
+  passed clean (allowlist held).
+- **Fixed the two CI non-blockers from the first green run:**
+  - `b20f63a` ci: bumped actions off the deprecated Node 20 runtime →
+    `actions/checkout@v6`, `actions/setup-node@v6`, `gitleaks/gitleaks-action@v3`
+    (v3 is a pure runtime bump — no input/output/behavior changes).
+  - `bbc2bec` refactor: cleared all 7 lint warnings *properly* (not suppressed):
+    - Ad consent (`AdScripts`/`AdSlot`/`ConsentBanner`): replaced the mount-gated
+      `useState`+`useEffect` with a shared `useSyncExternalStore` hook
+      (`src/lib/ads/use-ads-consent.ts`) — SSR-safe, no setState-in-effect.
+      `ConsentBanner` dropped its local `visible` state (consent event re-hides it).
+    - `VibePicker`: moved the `window.__savePendingVibes` hand-off into a
+      `useEffect` with cleanup (was a mutation during render).
+    - `RecommendationFeed`: removed the unused `userId` prop (+ caller in
+      `page.tsx`); ternary-statement → `if/else`; justify-disabled the one
+      fetch-on-mount `setState` (`loading` already starts true → no-op re-set).
+    - Removed the `react-hooks` warn-downgrade in `eslint.config.mjs`:
+      `set-state-in-effect` and `immutability` are **errors** again now that every
+      instance is fixed or documented.
+- **CI confirmed clean:** both jobs green with **0 annotations** (was 4), running
+  on the v6/v3 actions. `master` in sync with `origin`.
+
+### Decisions
+- The ad-consent mount-gate is now a `useSyncExternalStore` store, not an effect —
+  this is the standing pattern for client-only state (cookie + `bb-consent-change`
+  event). New ad/consent UI should use the `use-ads-consent` hooks.
+
+### Next / open
+- **gitleaks still not installed locally** — `winget install gitleaks` for the
+  local pre-commit secret scan (CI covers it regardless).
+- Carryover (unchanged): `enrich()` vs `enrichToFeedItems()` is an intentional
+  divergence, not a safe merge; `recommendation-engine.ts` (318) over the soft-300
+  advisory; behavioral spot-check of the feed against the running app still not done.
+
+---
+
 ## 2026-06-12
 
 ### Done
