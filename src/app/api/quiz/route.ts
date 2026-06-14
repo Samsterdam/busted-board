@@ -2,60 +2,93 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ratings, watched, dismissedItems, feedCache } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { getTrendingMovies, discoverMovies, type TmdbMovie } from "@/lib/tmdb";
+import {
+  getTrendingMovies,
+  discoverMovies,
+  getTrendingShows,
+  discoverShows,
+  type TmdbMovie,
+  type TmdbShow,
+} from "@/lib/tmdb";
 import { YEAR_PREFIX_LENGTH } from "@/lib/config/feed";
 import { QUIZ_SIZE, QUIZ_LIKE_RATING, QUIZ_DISLIKE_RATING, QUIZ_MAX_ANSWERS } from "@/lib/config/quiz";
 import { TITLE_MAX_LENGTH, RATING_SOURCE_QUIZ } from "@/lib/config/ratings";
 
 interface QuizItem {
   id: number;
-  type: "movie";
+  type: "movie" | "tv";
   title: string;
   year: string;
   posterPath: string | null;
 }
 
-// GET → a fresh set of recognizable titles to quiz on, excluding anything the
-// user has already rated, marked seen, or dismissed (no point asking about
-// titles we already have a signal for).
+// GET → a fresh set of recognizable titles (movies + TV shows) to quiz on,
+// excluding anything the user has already rated, marked seen, or dismissed.
 export async function GET() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const [ratedRows, watchedRows, dismissedRows] = await Promise.all([
-    db.select({ tmdbId: ratings.tmdbId }).from(ratings).where(eq(ratings.userId, userId)),
-    db.select({ tmdbId: watched.tmdbId }).from(watched).where(eq(watched.userId, userId)),
-    db.select({ tmdbId: dismissedItems.tmdbId }).from(dismissedItems).where(eq(dismissedItems.userId, userId)),
-  ]);
-  const known = new Set<number>([
-    ...ratedRows.map((r) => r.tmdbId),
-    ...watchedRows.map((r) => r.tmdbId),
-    ...dismissedRows.map((r) => r.tmdbId),
+    db.select({ tmdbId: ratings.tmdbId, tmdbType: ratings.tmdbType }).from(ratings).where(eq(ratings.userId, userId)),
+    db.select({ tmdbId: watched.tmdbId, tmdbType: watched.tmdbType }).from(watched).where(eq(watched.userId, userId)),
+    db.select({ tmdbId: dismissedItems.tmdbId, tmdbType: dismissedItems.tmdbType }).from(dismissedItems).where(eq(dismissedItems.userId, userId)),
   ]);
 
-  // Trending + a high-vote-count bucket → broadly recognizable titles people are
-  // likely to have an opinion on. Best-effort; an empty bucket just shrinks the set.
-  const [trending, acclaimed] = await Promise.all([
-    getTrendingMovies().then((r) => r.results ?? []).catch(() => []),
+  // Composite key prevents a dismissed movie from blocking a TV show with the
+  // same numeric TMDB ID (movies and TV share the same ID namespace in TMDB).
+  const known = new Set<string>([
+    ...ratedRows.map((r) => `${r.tmdbId}-${r.tmdbType}`),
+    ...watchedRows.map((r) => `${r.tmdbId}-${r.tmdbType}`),
+    ...dismissedRows.map((r) => `${r.tmdbId}-${r.tmdbType}`),
+  ]);
+
+  // Four parallel buckets: trending + acclaimed for both movies and TV.
+  const [trendingMovies, acclaimedMovies, trendingShows, acclaimedShows] = await Promise.all([
+    getTrendingMovies().then((r) => r.results ?? []).catch(() => [] as TmdbMovie[]),
     discoverMovies({ sort_by: "popularity.desc", "vote_count.gte": "1000" })
-      .then((r) => r.results ?? [])
-      .catch(() => []),
+      .then((r) => r.results ?? []).catch(() => [] as TmdbMovie[]),
+    getTrendingShows().then((r) => r.results ?? []).catch(() => [] as TmdbShow[]),
+    discoverShows({ sort_by: "popularity.desc", "vote_count.gte": "500" })
+      .then((r) => r.results ?? []).catch(() => [] as TmdbShow[]),
   ]);
 
-  const seen = new Set<number>();
-  const items: QuizItem[] = [];
-  for (const m of [...trending, ...acclaimed] as TmdbMovie[]) {
-    if (seen.has(m.id) || known.has(m.id) || !m.title) continue;
-    seen.add(m.id);
-    items.push({
+  const movieItems: QuizItem[] = [];
+  const seenMovies = new Set<string>();
+  for (const m of [...trendingMovies, ...acclaimedMovies]) {
+    const key = `${m.id}-movie`;
+    if (seenMovies.has(key) || known.has(key) || !m.title) continue;
+    seenMovies.add(key);
+    movieItems.push({
       id: m.id,
       type: "movie",
       title: m.title,
       year: (m.release_date ?? "").slice(0, YEAR_PREFIX_LENGTH),
       posterPath: m.poster_path,
     });
-    if (items.length >= QUIZ_SIZE) break;
+  }
+
+  const tvItems: QuizItem[] = [];
+  const seenShows = new Set<string>();
+  for (const s of [...trendingShows, ...acclaimedShows]) {
+    const key = `${s.id}-tv`;
+    if (seenShows.has(key) || known.has(key) || !s.name) continue;
+    seenShows.add(key);
+    tvItems.push({
+      id: s.id,
+      type: "tv",
+      title: s.name,
+      year: (s.first_air_date ?? "").slice(0, YEAR_PREFIX_LENGTH),
+      posterPath: s.poster_path,
+    });
+  }
+
+  // Interleave movies and TV so both types appear regardless of bucket size.
+  const items: QuizItem[] = [];
+  const maxLen = Math.max(movieItems.length, tvItems.length);
+  for (let i = 0; i < maxLen && items.length < QUIZ_SIZE; i++) {
+    if (i < movieItems.length && items.length < QUIZ_SIZE) items.push(movieItems[i]);
+    if (i < tvItems.length  && items.length < QUIZ_SIZE) items.push(tvItems[i]);
   }
 
   return Response.json({ items });
@@ -103,7 +136,7 @@ export async function POST(request: Request) {
       title: a.title,
       posterPath: a.posterPath ?? null,
       rating: a.verdict === "like" ? QUIZ_LIKE_RATING : QUIZ_DISLIKE_RATING,
-      watchStatus: "watched",
+      watchStatus: "watched" as const,
       source: RATING_SOURCE_QUIZ,
     }));
 

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { userPlatforms, users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { discoverMovies, discoverShows } from "@/lib/tmdb";
-import { enrichToFeedItems, type DiscoverResult } from "@/lib/recommendation-engine";
+import { enrichToFeedItems, type DiscoverResult } from "@/lib/feed-enrichment";
 import { getCollection, DEFAULT_BROWSE_PARAMS } from "@/lib/collections";
 import { PLATFORM_REGISTRY } from "@/lib/platforms";
 

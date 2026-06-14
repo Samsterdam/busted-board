@@ -12,14 +12,16 @@ import { QUIZ_SIZE } from "@/lib/config/quiz";
 
 interface QuizItem {
   id: number;
-  type: "movie";
+  type: "movie" | "tv";
   title: string;
   year: string;
   posterPath: string | null;
 }
 
 type Verdict = "like" | "dislike";
-type AnswerMap = Record<number, { verdict: Verdict; item: QuizItem }>;
+// Keyed on `${id}-${type}` — movies and TV shows share the TMDB numeric ID
+// namespace, so a plain number key would collide across media types.
+type AnswerMap = Record<string, { verdict: Verdict; item: QuizItem }>;
 
 const SKELETON_COUNT = QUIZ_SIZE;
 
@@ -39,12 +41,13 @@ export default function QuizPage() {
   }, []);
 
   function vote(item: QuizItem, verdict: Verdict) {
+    const key = `${item.id}-${item.type}`;
     setAnswers((prev) => {
       const next = { ...prev };
-      if (next[item.id]?.verdict === verdict) {
-        delete next[item.id];
+      if (next[key]?.verdict === verdict) {
+        delete next[key];
       } else {
-        next[item.id] = { verdict, item };
+        next[key] = { verdict, item };
       }
       return next;
     });
@@ -132,7 +135,7 @@ export default function QuizPage() {
       <div className="space-y-3 mb-6">
         {items.map((item) => {
           const imgSrc = posterUrl(item.posterPath, "w342");
-          const current = answers[item.id]?.verdict;
+          const current = answers[`${item.id}-${item.type}`]?.verdict;
           return (
             <div
               key={item.id}
@@ -153,7 +156,7 @@ export default function QuizPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{item.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.year.slice(0, YEAR_PREFIX_LENGTH)}
+                  {item.year.slice(0, YEAR_PREFIX_LENGTH)}{item.year ? " · " : ""}{item.type === "tv" ? "TV" : "Film"}
                 </p>
               </div>
               <div className="flex gap-1.5 flex-shrink-0">
