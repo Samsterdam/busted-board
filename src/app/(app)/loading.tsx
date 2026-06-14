@@ -1,32 +1,34 @@
 export default function Loading() {
   return (
     <div className="min-h-screen pb-20 px-4 py-4">
-      {/* Header skeleton */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="skeleton h-7 w-36 rounded" />
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="skeleton h-8 w-40 rounded" />
         <div className="flex gap-2">
+          <div className="skeleton h-8 w-8 rounded-lg" />
           <div className="skeleton h-8 w-8 rounded-lg" />
           <div className="skeleton h-8 w-8 rounded-lg" />
         </div>
       </div>
 
-      {/* Platform chips skeleton */}
-      <div className="flex gap-2 mb-5">
+      {/* Search bar */}
+      <div className="skeleton h-10 w-full rounded-md mb-3" />
+
+      {/* Platform chips */}
+      <div className="flex gap-1.5 mb-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="skeleton h-5 w-16 rounded-full" />
+          <div key={i} className="skeleton h-6 w-16 rounded-full" />
         ))}
       </div>
 
-      {/* Card grid skeleton */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {/* Card grid */}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="rounded-xl overflow-hidden border border-border">
+          <div key={i} className="rounded-xl overflow-hidden">
             <div className="skeleton aspect-[2/3] w-full" />
             <div className="p-2 space-y-2">
               <div className="skeleton h-3 w-3/4 rounded" />
               <div className="skeleton h-3 w-1/2 rounded" />
-              <div className="skeleton h-6 w-8 rounded mx-auto" />
-              <div className="skeleton h-3 w-full rounded" />
             </div>
           </div>
         ))}

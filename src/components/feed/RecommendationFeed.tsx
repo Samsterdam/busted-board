@@ -10,7 +10,7 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { slotHasActiveProvider } from "@/lib/ads/registry";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { MIN_RATINGS_FOR_PROFILE, RATING_MAX, RATING_SOURCE_QUICK } from "@/lib/config/ratings";
-import { toFeedItem, FeedSkeleton, EmptyState } from "./FeedStates";
+import { toFeedItem, GridSkeleton, EmptyState } from "./FeedStates";
 import { useWatchedIds } from "./hooks/useWatchedIds";
 import { toast } from "sonner";
 
@@ -251,15 +251,8 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   const inSearchMode = searchResults !== null;
   const items = inSearchMode ? searchResults : displayed;
 
-  if (loading) return <FeedSkeleton />;
-
-  if (needsRatings || ratingCount < MIN_RATINGS_FOR_PROFILE) {
-    return (
-      <EmptyState
-        rated={ratingCount}
-        onRate={() => window.location.href = "/watched"}
-      />
-    );
+  if (ratingCount < MIN_RATINGS_FOR_PROFILE) {
+    return <EmptyState rated={ratingCount} onRate={() => window.location.href = "/watched"} />;
   }
 
   return (
@@ -382,7 +375,12 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
         </p>
       )}
 
-      {items.length === 0 && (
+      {/* Grid — skeleton while loading, content once feed resolves */}
+      {loading ? (
+        <GridSkeleton gridClass={GRID_CLASSES[cardSize]} />
+      ) : needsRatings ? (
+        <EmptyState rated={ratingCount} onRate={() => window.location.href = "/watched"} />
+      ) : items.length === 0 ? (
         <p className="text-center text-muted-foreground py-12">
           {inSearchMode
             ? "No matches found. Try a different search."
@@ -392,9 +390,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
             ? "No hidden gems found on your platforms right now."
             : "No recommendations found."}
         </p>
-      )}
-
-      {/* Grid */}
+      ) : (
       <div
         className={GRID_CLASSES[cardSize]}
         role="list"
@@ -429,9 +425,10 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
           );
         })}
       </div>
+      )}
 
       {/* More like this — similar titles for the searched query */}
-      {inSearchMode && similarResults.length > 0 && (
+      {!loading && inSearchMode && similarResults.length > 0 && (
         <div className="mt-8">
           <h2 className="mb-3 text-lg font-semibold">More like this</h2>
           <div className={GRID_CLASSES[cardSize]} role="list" aria-label="Similar titles">
@@ -456,7 +453,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
       )}
 
       {/* Infinite scroll sentinel — feed only; search results aren't paginated */}
-      {hasMore && !inSearchMode && (
+      {!loading && hasMore && !inSearchMode && (
         <div ref={sentinelRef} className="py-4 flex justify-center">
           {loadingMore && (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 w-full">

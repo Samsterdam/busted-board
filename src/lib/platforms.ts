@@ -13,23 +13,24 @@ export interface Platform {
 export const PLATFORM_REGISTRY: Platform[] = [
   // Paid / subscription
   { slug: "netflix", name: "Netflix", tmdbId: 8, type: "paid" },
-  { slug: "prime", name: "Prime Video", tmdbId: 119, type: "paid" },
+  { slug: "prime", name: "Prime Video", tmdbId: 9, type: "paid" },
   { slug: "disney", name: "Disney+", tmdbId: 337, type: "paid" },
   { slug: "hulu", name: "Hulu", tmdbId: 15, type: "paid" },
   { slug: "max", name: "Max", tmdbId: 1899, type: "paid" },
-  { slug: "paramount", name: "Paramount+", tmdbId: 531, type: "paid" },
+  // 2616 = Paramount Plus Essential (base tier); covers the vast majority of catalog.
+  { slug: "paramount", name: "Paramount+", tmdbId: 2616, type: "paid" },
   { slug: "appletv", name: "Apple TV+", tmdbId: 350, type: "paid" },
   { slug: "peacock", name: "Peacock", tmdbId: 386, type: "paid" },
-  { slug: "showtime", name: "Showtime", tmdbId: 37, type: "paid" },
+  // Showtime removed: folded into Paramount+ in 2023, no longer a separate TMDB US provider.
   // Free / ad-supported
-  { slug: "tubi", name: "Tubi", tmdbId: 257, type: "free" },
+  { slug: "tubi", name: "Tubi", tmdbId: 73, type: "free" },
   { slug: "pluto", name: "Pluto TV", tmdbId: 300, type: "free" },
-  { slug: "youtube", name: "YouTube (Free)", tmdbId: 192, type: "free" },
+  { slug: "youtube", name: "YouTube (Free)", tmdbId: 235, type: "free" },
   { slug: "hoopla", name: "Hoopla", tmdbId: 212, type: "free" },
   { slug: "kanopy", name: "Kanopy", tmdbId: 191, type: "free" },
   { slug: "plex", name: "Plex", tmdbId: 538, type: "free" },
   { slug: "roku", name: "Roku Channel", tmdbId: 207, type: "free" },
-  { slug: "crackle", name: "Crackle", tmdbId: 25, type: "free" },
+  // Crackle removed: TMDB has no US provider entry for Crackle; old ID 25 was Fandor.
 ];
 
 export const PAID_PLATFORMS = PLATFORM_REGISTRY.filter((p) => p.type === "paid");

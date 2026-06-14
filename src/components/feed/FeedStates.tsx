@@ -29,21 +29,18 @@ export function toFeedItem(
   };
 }
 
-export function FeedSkeleton() {
+export function GridSkeleton({ gridClass }: { gridClass: string }) {
   return (
-    <div className="px-4 py-4">
-      <div className="skeleton h-8 w-40 mb-4 rounded" />
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="rounded-xl overflow-hidden">
-            <div className="skeleton aspect-[2/3] w-full" />
-            <div className="p-2 space-y-2">
-              <div className="skeleton h-3 w-3/4 rounded" />
-              <div className="skeleton h-3 w-1/2 rounded" />
-            </div>
+    <div className={gridClass}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="rounded-xl overflow-hidden">
+          <div className="skeleton aspect-[2/3] w-full" />
+          <div className="p-2 space-y-2">
+            <div className="skeleton h-3 w-3/4 rounded" />
+            <div className="skeleton h-3 w-1/2 rounded" />
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
