@@ -18,8 +18,8 @@ export const MS_PER_DAY = HOURS_PER_DAY * MS_PER_HOUR;
 
 /** Scores cache: critic/audience scores change slowly → 7 days. */
 export const SCORE_CACHE_TTL_MS = 7 * MS_PER_DAY;
-/** Streaming availability shifts faster than scores → 1 day. */
-export const AVAILABILITY_CACHE_TTL_MS = 1 * MS_PER_DAY;
+/** Streaming availability shifts faster than scores, but not hourly → 3 days. */
+export const AVAILABILITY_CACHE_TTL_MS = 3 * MS_PER_DAY;
 /** Recommendation-feed cache freshness → 12 hours. */
 export const FEED_CACHE_MAX_AGE_MS = 12 * MS_PER_HOUR;
 /** OMDB fetch timeout. */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { PageShell } from "@/components/layout/PageShell";
@@ -44,6 +44,9 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+  const isAdmin = process.env.NEXT_PUBLIC_SHOW_ADMIN === "true";
 
   useEffect(() => {
     Promise.all([
@@ -92,6 +95,28 @@ export default function SettingsPage() {
       toast.error("Could not share.");
     }
   }
+
+  const handleSyncCatalog = useCallback(async (slug?: string) => {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const secret = process.env.NEXT_PUBLIC_CATALOG_SYNC_SECRET ?? "";
+      const url = slug ? `/api/admin/sync-catalog?slug=${slug}` : "/api/admin/sync-catalog";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "x-sync-secret": secret },
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? "Sync failed"); return; }
+      const summary = `Synced ${data.synced} movies across ${Object.keys(data.platforms ?? {}).length} platforms.`;
+      setSyncResult(summary);
+      toast.success(summary);
+    } catch {
+      toast.error("Catalog sync failed.");
+    } finally {
+      setSyncing(false);
+    }
+  }, []);
 
   async function handleDelete() {
     setDeleting(true);
@@ -203,6 +228,31 @@ export default function SettingsPage() {
             </Button>
           </div>
         </section>
+
+        {isAdmin && (
+          <section aria-labelledby="admin-heading">
+            <h2 id="admin-heading" className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              Admin
+            </h2>
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <p className="text-sm font-medium">Sync Streaming Catalog</p>
+              <p className="text-xs text-muted-foreground">
+                Fetches movies from Movie of the Night and Watchmode for all platforms and stores them in the database. Clears all user feed caches. Budget: ~66 API calls (of 500/month).
+              </p>
+              {syncResult && (
+                <p className="text-xs text-green-400">{syncResult}</p>
+              )}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => handleSyncCatalog()}
+                disabled={syncing}
+              >
+                {syncing ? "Syncing…" : "Sync All Platforms"}
+              </Button>
+            </div>
+          </section>
+        )}
 
         <button
           type="button"

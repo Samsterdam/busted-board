@@ -17,13 +17,14 @@ export async function GET(request: Request) {
   const seenIds = (url.searchParams.get("seenIds") ?? "").split(",").map(Number).filter(Boolean);
 
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  const platforms = await db.select().from(userPlatforms).where(eq(userPlatforms.userId, userId));
-  const platformTmdbIds = platforms
+  const userPlatformRows = await db.select().from(userPlatforms).where(eq(userPlatforms.userId, userId));
+  const platformSlugs = userPlatformRows.map((p) => p.platformSlug);
+  const platformTmdbIds = userPlatformRows
     .map((p) => PLATFORM_REGISTRY.find((r) => r.slug === p.platformSlug)?.tmdbId)
     .filter((id): id is number => id != null);
 
   if (page >= 2) {
-    const more = await buildMoreFeed(userId, platformTmdbIds, user?.country ?? "US", seenIds, page);
+    const more = await buildMoreFeed(userId, platformTmdbIds, platformSlugs, user?.country ?? "US", seenIds, page);
     return Response.json({ feed: more, cached: false, page });
   }
 
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
   } : null;
 
   try {
-    const feed = await buildFeed(userId, platformTmdbIds, user?.country ?? "US", parsedProfile);
+    const feed = await buildFeed(userId, platformTmdbIds, platformSlugs, user?.country ?? "US", parsedProfile);
 
     const [existing] = await db.select().from(feedCache).where(eq(feedCache.userId, userId)).limit(1);
     if (existing) {

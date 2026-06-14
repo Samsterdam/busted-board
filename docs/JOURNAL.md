@@ -5,6 +5,42 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 16 — parallel: provider ID fixes + catalog integration)
+
+### Done
+
+- **Fixed wrong TMDB provider IDs** in `src/lib/platforms.ts` — verified against live TMDB API:
+  - Prime Video: 119 → 9 (119 not in US provider list at all)
+  - Paramount+: 531 → 2616 (Essential tier; 531 not in US provider list)
+  - Tubi: 257 → 73 (257 is fuboTV!)
+  - YouTube (Free): 192 → 235 (192 is generic/paid YouTube)
+  - Removed Showtime (folded into Paramount+ on TMDB, not a US provider)
+  - Removed Crackle (TMDB ID 25 is Fandor; Crackle has no TMDB US entry)
+- **Deep research** on streaming availability data sources (103 agents, 21 sources): confirmed no official platform APIs exist; Watchmode (279 providers, 2,500 free req/month) and Movie of the Night / Streaming Availability API (2,191 catalogs, 200k+ titles) are the two viable commercial options; TMDB is a once-daily JustWatch export with 32+ hr staleness.
+- **Dual-source platform catalog** — Movie of the Night (MOTN) + Watchmode pre-populate our DB so the recommendation engine never makes per-request external API calls for discovery:
+  - `src/lib/env.ts` — added `STREAMING_AVAILABILITY_API_KEY`, `WATCHMODE_API_KEY`, `CATALOG_SYNC_SECRET`, `ADMIN_EMAIL`
+  - `src/lib/schema.ts` — extended `media` table (`overview`, `originalLanguage`, `motnRating`, `syncedAt`); extended `platforms` table (`motnServiceId`, `watchmodeSourceId`)
+  - `drizzle/migrations/0004_jazzy_warpath.sql` — generated and applied to Neon DB
+  - `src/lib/config/catalog.ts` — MOTN/Watchmode service ID maps, sync limits, constants
+  - `src/lib/motn.ts` — Movie of the Night client with budget-safe pagination
+  - `src/lib/watchmode.ts` — Watchmode client
+  - `src/app/api/admin/sync-catalog/route.ts` — POST endpoint; fans out all platforms in parallel, delete-then-insert `mediaLinks` (removes departed titles), clears `feedCache` after sync; gated by `ADMIN_EMAIL` + `CATALOG_SYNC_SECRET` header
+  - `src/lib/recommendation-engine.ts` — `queryCatalogCandidates()` queries `media → mediaLinks → platforms`; added as highest-priority bucket in both `buildFeed` and `buildMoreFeed`; catalog movies skip Gemini ranking (use `motnRating` order instead), avoiding `popularity` distortion
+  - `src/app/api/recommendations/feed/route.ts` — passes `platformSlugs` to both build functions
+  - `src/app/(app)/settings/page.tsx` — "Sync Catalog" admin button (visible when `NEXT_PUBLIC_SHOW_ADMIN=true`)
+- **Initial sync completed** (local, directly against Neon DB): 1,250 movies across 14 platforms — 11 via MOTN × 100 movies each, 3 via Watchmode × 50 each. **61/500 MOTN quota used** (resets 2026-07-01). Catalog includes The Dark Knight on Roku, The Godfather on Pluto, The Matrix on YouTube Free, The Silence of the Lambs on Tubi, etc.
+- **Division of labor**: MOTN covers mainstream paid + AVOD (Netflix, Prime, Disney, Max, Hulu, Apple, Roku, Peacock, Paramount, Tubi, Pluto); Watchmode covers library/niche (YouTube Free, Hoopla, Plex). Kanopy not tracked by either.
+
+### Next / open
+
+- Add to Vercel env vars: `STREAMING_AVAILABILITY_API_KEY`, `WATCHMODE_API_KEY`, `CATALOG_SYNC_SECRET`, `ADMIN_EMAIL`, `NEXT_PUBLIC_SHOW_ADMIN=true`, `NEXT_PUBLIC_CATALOG_SYNC_SECRET`
+- Test the Settings → Admin → "Sync Catalog" UI button after deploying
+- Re-sync as needed; 439/500 MOTN quota remains for July (budget allows ~6 more full syncs this month)
+- Future: add `watchUrl` (deep link) to `FeedItem` using MOTN's deep link data; add "Watch on [Platform]" button in `MovieDetailModal`
+- Future: multi-platform availability badge on cards ("Also on Tubi, Pluto")
+
+---
+
 ## 2026-06-14 (session 16)
 
 ### Done

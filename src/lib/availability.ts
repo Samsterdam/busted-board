@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { mediaAvailability } from "./schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { getWatchProviders, type WatchProviders } from "./tmdb";
 import { upsertMedia, syncMediaLinks } from "./media-store";
 import { AVAILABILITY_CACHE_TTL_MS } from "./config/durations";
@@ -84,4 +84,40 @@ export async function getCachedWatchProviders(
   }
 
   return providers;
+}
+
+/**
+ * Batch-fetch cached availability rows for a set of candidates in one DB
+ * query. Returns a Map keyed by `"${tmdbId}:${type}"` containing only
+ * non-expired entries — the caller should fall back to `getCachedWatchProviders`
+ * for keys missing from the map. Never throws; returns an empty Map on error.
+ */
+export async function prefetchWatchProviders(
+  candidates: Array<{ tmdbId: number; type: "movie" | "tv" }>,
+  region: string
+): Promise<Map<string, WatchProviders>> {
+  if (candidates.length === 0) return new Map();
+  try {
+    const ids = candidates.map((c) => c.tmdbId);
+    const rows = await db
+      .select()
+      .from(mediaAvailability)
+      .where(
+        and(
+          inArray(mediaAvailability.tmdbId, ids),
+          eq(mediaAvailability.region, region)
+        )
+      );
+
+    const now = Date.now();
+    const result = new Map<string, WatchProviders>();
+    for (const row of rows) {
+      if (now - row.fetchedAt!.getTime() < AVAILABILITY_CACHE_TTL_MS) {
+        result.set(`${row.tmdbId}:${row.tmdbType}`, JSON.parse(row.providers) as WatchProviders);
+      }
+    }
+    return result;
+  } catch {
+    return new Map();
+  }
 }

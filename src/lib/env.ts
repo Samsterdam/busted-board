@@ -22,4 +22,12 @@ export const env = {
   /** Optional — rate limiting via Upstash Redis. Skipped when unset (local dev). */
   UPSTASH_REDIS_REST_URL:   process.env.UPSTASH_REDIS_REST_URL,
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+  /** Optional — Movie of the Night streaming availability API. */
+  STREAMING_AVAILABILITY_API_KEY: process.env.STREAMING_AVAILABILITY_API_KEY,
+  /** Optional — Watchmode streaming availability API. */
+  WATCHMODE_API_KEY: process.env.WATCHMODE_API_KEY,
+  /** Optional — secret header required to trigger catalog sync. */
+  CATALOG_SYNC_SECRET: process.env.CATALOG_SYNC_SECRET,
+  /** Optional — email address that sees the admin sync UI. */
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL,
 } as const;

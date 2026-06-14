@@ -211,6 +211,11 @@ export const media = pgTable(
     title: text("title").notNull(),
     releaseYear: integer("release_year"),
     posterPath: text("poster_path"),
+    // Populated by catalog sync from Movie of the Night / Watchmode:
+    overview: text("overview"),
+    originalLanguage: text("original_language"),
+    motnRating: integer("motn_rating"),   // 0–100 aggregated rating from MOTN
+    syncedAt: timestamp("synced_at"),     // last time populated from external catalog
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => [unique("media_tmdb_unique").on(t.tmdbId, t.tmdbType)]
@@ -225,6 +230,9 @@ export const platforms = pgTable("platforms", {
   tmdbId: integer("tmdb_id").unique(),
   type: text("type").notNull().default("paid"),
   iconUrl: text("icon_url"),
+  // External catalog API identifiers — populated by sync-catalog:
+  motnServiceId: text("motn_service_id"),       // e.g. "tubi", "netflix" (Movie of the Night)
+  watchmodeSourceId: integer("watchmode_source_id"), // e.g. 345 (Watchmode source ID)
   createdAt: timestamp("created_at").defaultNow(),
 });
 

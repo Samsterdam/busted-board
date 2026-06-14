@@ -105,15 +105,14 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
             />
           </div>
 
-          {/* Why you'll like this */}
-          {item.whyYoullLikeThis && (
+          {/* Description: prefer personalized synopsis, fall back to overview */}
+          {item.whyYoullLikeThis ? (
             <blockquote className="border-l-2 border-primary pl-3 text-sm text-muted-foreground italic">
               &ldquo;{item.whyYoullLikeThis}&rdquo;
             </blockquote>
+          ) : (
+            <p className="text-sm text-muted-foreground line-clamp-3">{item.overview}</p>
           )}
-
-          {/* Overview */}
-          <p className="text-sm text-muted-foreground line-clamp-3">{item.overview}</p>
 
           {/* Platforms */}
           <div>
