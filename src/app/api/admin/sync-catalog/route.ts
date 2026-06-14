@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { media, platforms, mediaLinks, feedCache, catalogSyncLog } from "@/lib/schema";
 import { eq, and, gte, sum } from "drizzle-orm";
 import { env } from "@/lib/env";
+import { warmupCatalogPosters } from "@/lib/catalog-poster-warmup";
 import { PLATFORM_REGISTRY } from "@/lib/platforms";
 import { fetchMoTNTitles } from "@/lib/motn";
 import { fetchWatchmodeTitles } from "@/lib/watchmode";
@@ -75,7 +76,10 @@ async function upsertMediaAndLink(
     .onConflictDoUpdate({
       target: [media.tmdbId, media.tmdbType],
       set: {
-        title, releaseYear, posterPath, overview,
+        title, releaseYear, overview,
+        // Preserve an existing non-null posterPath — MOTN/Watchmode often lack image
+        // data, and we'd lose a TMDB path stored by a prior sync or availability check.
+        ...(posterPath !== null ? { posterPath } : {}),
         motnRating, seasonCount, episodeCount, syncedAt: new Date(),
       },
     })
@@ -314,6 +318,9 @@ export async function POST(request: Request) {
   // Invalidate all feed caches — users get fresh recommendations
   await db.delete(feedCache);
 
+  // Fetch TMDB poster paths for any catalog rows that still have none.
+  const postersWarmed = await warmupCatalogPosters();
+
   const totalSynced = Object.values(results).reduce((s, r) => s + r.count, 0);
   const errors = Object.entries(results)
     .filter(([, r]) => !r.skipped && r.reason)
@@ -321,6 +328,7 @@ export async function POST(request: Request) {
 
   return Response.json({
     synced: totalSynced,
+    postersWarmed,
     callsUsed: totalCallsUsed,
     budgetRemaining,
     platforms: results,
