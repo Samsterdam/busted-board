@@ -261,6 +261,9 @@ export default function SettingsPage() {
             Terms of Service
           </Link>
         </p>
+        <p className="text-center text-xs text-muted-foreground/50 pt-1">
+          {process.env.NEXT_PUBLIC_BUILD_COMMIT} · {new Date(process.env.NEXT_PUBLIC_BUILD_DATE ?? "").toLocaleString()}
+        </p>
       </div>
     </PageShell>
   );
