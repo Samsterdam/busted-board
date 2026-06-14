@@ -29,15 +29,26 @@ interface WatchlistItem {
   addedAt: Date | null;
 }
 
+interface SeenItem {
+  id: number;
+  tmdbId: number;
+  tmdbType: string;
+  title: string;
+  posterPath: string | null;
+  seenAt: Date | null;
+}
+
 interface Props {
   watched: Rated[];
   watchlist: WatchlistItem[];
+  seenItems: SeenItem[];
 }
 
-export function WatchedTabs({ watched: initial, watchlist: initialWatchlist }: Props) {
-  const [tab, setTab] = useState<"watched" | "watchlist">("watched");
+export function WatchedTabs({ watched: initial, watchlist: initialWatchlist, seenItems: initialSeen }: Props) {
+  const [tab, setTab] = useState<"watched" | "watchlist" | "seen">("watched");
   const [watched, setWatched] = useState(initial);
   const [wantToWatch, setWantToWatch] = useState(initialWatchlist);
+  const [seenItems, setSeenItems] = useState(initialSeen);
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -48,6 +59,9 @@ export function WatchedTabs({ watched: initial, watchlist: initialWatchlist }: P
     w.title.toLowerCase().includes(query.toLowerCase())
   );
   const filteredWatchlist = wantToWatch.filter((w) =>
+    w.title.toLowerCase().includes(query.toLowerCase())
+  );
+  const filteredSeen = seenItems.filter((w) =>
     w.title.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -67,12 +81,22 @@ export function WatchedTabs({ watched: initial, watchlist: initialWatchlist }: P
     toast.success("Removed from watchlist");
   }
 
+  async function handleDeleteSeen(tmdbId: number, tmdbType: string) {
+    setSeenItems((prev) => prev.filter((w) => !(w.tmdbId === tmdbId && w.tmdbType === tmdbType)));
+    await fetch("/api/watched", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tmdbId, tmdbType }),
+    }).catch(() => null);
+    toast.success("Removed from seen");
+  }
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold">
-          {tab === "watched" ? "Watched" : "Want to Watch"}
+          {tab === "watched" ? "Watched" : tab === "watchlist" ? "Want to Watch" : "Seen"}
         </h1>
         <Button
           size="sm"
@@ -86,18 +110,22 @@ export function WatchedTabs({ watched: initial, watchlist: initialWatchlist }: P
 
       {/* Tabs */}
       <div className="flex gap-1 mb-4 border-b border-border">
-        {(["watched", "watchlist"] as const).map((t) => (
+        {(["watched", "watchlist", "seen"] as const).map((t) => (
           <button
             key={t}
             type="button"
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
               tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t === "watched" ? `Watched (${watched.length})` : `Want to Watch (${wantToWatch.length})`}
+            {t === "watched"
+              ? `Watched (${watched.length})`
+              : t === "watchlist"
+              ? `Want to Watch (${wantToWatch.length})`
+              : `Seen (${seenItems.length})`}
           </button>
         ))}
       </div>
@@ -200,6 +228,50 @@ export function WatchedTabs({ watched: initial, watchlist: initialWatchlist }: P
                 onClick={() => handleDeleteWatchlist(item.tmdbId)}
                 className="p-1.5 rounded text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-2 focus-visible:outline-primary"
                 aria-label={`Remove ${item.title} from watchlist`}
+              >
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Seen (watched without a star rating) */}
+      {tab === "seen" && (
+        <div className="space-y-2" role="list" aria-label="Seen items">
+          {filteredSeen.length === 0 && (
+            <p className="text-center text-muted-foreground py-12">
+              {query ? "No results." : "Nothing here yet. Use the eye icon on feed cards to mark titles as seen."}
+            </p>
+          )}
+          {filteredSeen.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
+              role="listitem"
+            >
+              <div className="relative h-14 w-10 flex-shrink-0 rounded overflow-hidden bg-muted">
+                {item.posterPath ? (
+                  <Image
+                    src={`https://image.tmdb.org/t/p/w92${item.posterPath}`}
+                    alt={`Poster for ${item.title}`}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : null}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{item.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {item.seenAt ? new Date(item.seenAt).toLocaleDateString() : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDeleteSeen(item.tmdbId, item.tmdbType)}
+                className="p-1.5 rounded text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+                aria-label={`Remove ${item.title} from seen`}
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
