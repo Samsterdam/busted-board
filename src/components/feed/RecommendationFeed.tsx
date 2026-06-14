@@ -11,6 +11,9 @@ import { slotHasActiveProvider } from "@/lib/ads/registry";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { MIN_RATINGS_FOR_PROFILE, RATING_MAX, RATING_SOURCE_QUICK } from "@/lib/config/ratings";
 import { toFeedItem, GridSkeleton, EmptyState } from "./FeedStates";
+import { ResultsSection } from "./ResultsSection";
+import { PlatformFilter } from "./PlatformFilter";
+import { useDiscovery } from "./hooks/useDiscovery";
 import { useWatchedIds } from "./hooks/useWatchedIds";
 import { toast } from "sonner";
 
@@ -107,6 +110,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const { discovery, setDiscovery, loadingDiscovery } = useDiscovery(feed.length, loading);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadFeed = useCallback(async (refresh = false) => {
@@ -183,6 +187,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
 
   async function handleDismiss(item: FeedItem) {
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
+    setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     await fetch("/api/feed/dismiss", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -192,6 +197,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
 
   async function handleThumbsUp(item: FeedItem) {
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
+    setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     await fetch("/api/ratings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -218,6 +224,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
 
     if (!inList) {
       setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
+      setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     }
 
     await fetch("/api/watchlist", {
@@ -231,6 +238,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
 
   async function handleWatched(item: FeedItem) {
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
+    setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     setWatchedIds((prev) => new Set([...prev, item.tmdbId]));
     await fetch("/api/watched", {
       method: "POST",
@@ -337,36 +345,13 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
       )}
 
       {/* Platform filter chips */}
-      {!inSearchMode && platforms.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 mb-4" role="group" aria-label="Filter by streaming service">
-          {platforms.map((p) => {
-            const active = selectedPlatforms.has(p.tmdbId);
-            return (
-              <button
-                key={p.tmdbId}
-                type="button"
-                onClick={() => togglePlatform(p.tmdbId)}
-                aria-pressed={active}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {p.name}
-              </button>
-            );
-          })}
-          {selectedPlatforms.size > 0 && (
-            <button
-              type="button"
-              onClick={() => setSelectedPlatforms(new Set())}
-              className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
-            >
-              Clear
-            </button>
-          )}
-        </div>
+      {!inSearchMode && (
+        <PlatformFilter
+          platforms={platforms}
+          selectedPlatforms={selectedPlatforms}
+          onToggle={togglePlatform}
+          onClear={() => setSelectedPlatforms(new Set())}
+        />
       )}
 
       {!inSearchMode && staleWarning && (
@@ -429,26 +414,45 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
 
       {/* More like this — similar titles for the searched query */}
       {!loading && inSearchMode && similarResults.length > 0 && (
+        <ResultsSection
+          title="More like this"
+          items={similarResults}
+          gridClass={GRID_CLASSES[cardSize]}
+          userRatings={userRatings}
+          watchlistIds={watchlistIds}
+          watchedIds={watchedIds}
+          onItemClick={(item) => setSelectedItem(item)}
+          onRate={(item) => setSelectedItem(item)}
+          onDismiss={handleDismiss}
+          onWatchlist={handleWatchlist}
+          onWatched={handleWatched}
+          onThumbsUp={handleThumbsUp}
+        />
+      )}
+
+      {/* Discovery — top picks on platforms the user doesn't have yet */}
+      {!loading && !inSearchMode && (discovery.length > 0 || loadingDiscovery) && (
         <div className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold">More like this</h2>
-          <div className={GRID_CLASSES[cardSize]} role="list" aria-label="Similar titles">
-            {similarResults.map((item) => (
-              <div key={item.tmdbId} role="listitem">
-                <RecommendationCard
-                  item={item}
-                  userRating={userRatings[item.tmdbId]}
-                  inWatchlist={watchlistIds.has(item.tmdbId)}
-                  inWatched={watchedIds.has(item.tmdbId)}
-                  onClick={() => setSelectedItem(item)}
-                  onRate={() => setSelectedItem(item)}
-                  onDismiss={() => handleDismiss(item)}
-                  onWatchlist={() => handleWatchlist(item)}
-                  onWatched={() => handleWatched(item)}
-                  onThumbsUp={() => handleThumbsUp(item)}
-                />
-              </div>
-            ))}
-          </div>
+          {loadingDiscovery ? (
+            <GridSkeleton gridClass={GRID_CLASSES[cardSize]} />
+          ) : (
+            <ResultsSection
+              title="Expand your lineup"
+              subtitle="Top picks on services you don't have yet"
+              platformLabels
+              items={discovery}
+              gridClass={GRID_CLASSES[cardSize]}
+              userRatings={userRatings}
+              watchlistIds={watchlistIds}
+              watchedIds={watchedIds}
+              onItemClick={(item) => setSelectedItem(item)}
+              onRate={(item) => setSelectedItem(item)}
+              onDismiss={handleDismiss}
+              onWatchlist={handleWatchlist}
+              onWatched={handleWatched}
+              onThumbsUp={handleThumbsUp}
+            />
+          )}
         </div>
       )}
 

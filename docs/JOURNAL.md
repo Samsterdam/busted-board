@@ -5,6 +5,28 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 16)
+
+### Done
+
+- **Cross-platform discovery section**: "Expand your lineup" section below the main feed shows top-rated content available on streaming services the user *doesn't* have yet.
+  - `src/lib/discovery-engine.ts` — `buildDiscoveryItems(userId, platformTmdbIds, region)`: 2 TMDB buckets (top-rated + popular), excludes rated/watched/dismissed/watchlisted, **excludes items accessible on any user-owned platform** (correctness fix: multi-platform items like Netflix+Hulu don't bleed through if user has Hulu), returns up to 8 `FeedItem[]` with `platforms` = the non-user provider names.
+  - `src/app/api/recommendations/discovery/route.ts` — `GET /api/recommendations/discovery`, uncached (provider data has its own DB cache via `getCachedWatchProviders`).
+  - `src/components/feed/hooks/useDiscovery.ts` — lazy-loads discovery after main feed renders so it never blocks page load.
+  - `src/components/feed/PlatformFilter.tsx` — extracted from inline JSX in `RecommendationFeed.tsx`.
+  - `src/components/feed/ResultsSection.tsx` — reusable grid section with heading/subtitle; used for both "More like this" and discovery. Supports `platformLabels` prop to render the platform name above each card.
+  - `src/components/feed/RecommendationFeed.tsx` — all four mutation handlers (dismiss, watchlist, watched, thumbsUp) now also clear from `discovery` state.
+  - `src/lib/config/feed.ts` — 4 new discovery constants.
+
+### Next / open
+
+- Apply for affiliate programs (JustWatch publisher, Amazon Associates, or per-platform via CJ/Impact) — add watch-now links once accounts are set up.
+- Affiliate links groundwork: add `watchUrl?: string` to `FeedItem` and "Watch on [Platform]" button in `MovieDetailModal`.
+- Google OAuth app verification (Google Cloud Console → OAuth consent screen → Submit for verification).
+- OWASP ZAP scan against live site.
+
+---
+
 ## 2026-06-14 (session 15)
 
 ### Done
