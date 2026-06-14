@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { X, Bookmark, BookmarkCheck } from "lucide-react";
+import { X, Bookmark, BookmarkCheck, Eye } from "lucide-react";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { CinemaScoreBadge, ThreeScoreRow } from "./ScoreDisplay";
 import { RibbonBadge } from "./RibbonBadge";
@@ -10,9 +10,11 @@ interface Props {
   item: FeedItem;
   userRating?: number;
   inWatchlist?: boolean;
+  inWatched?: boolean;
   onRate: () => void;
   onDismiss: () => void;
   onWatchlist: () => void;
+  onWatched: () => void;
   onClick: () => void;
 }
 
@@ -20,9 +22,11 @@ export function RecommendationCard({
   item,
   userRating,
   inWatchlist,
+  inWatched,
   onRate,
   onDismiss,
   onWatchlist,
+  onWatched,
   onClick,
 }: Props) {
   return (
@@ -74,6 +78,14 @@ export function RecommendationCard({
             ? <BookmarkCheck className="h-3 w-3 text-primary" aria-hidden="true" />
             : <Bookmark className="h-3 w-3" aria-hidden="true" />
           }
+        </button>
+        <button
+          type="button"
+          onClick={onWatched}
+          className={`pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-green-700/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary ${inWatched ? "opacity-60" : ""}`}
+          aria-label={`Mark ${item.title} as watched`}
+        >
+          <Eye className={`h-3 w-3 ${inWatched ? "text-green-400" : ""}`} aria-hidden="true" />
         </button>
       </div>
 

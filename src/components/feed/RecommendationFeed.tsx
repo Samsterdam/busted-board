@@ -11,6 +11,7 @@ import { slotHasActiveProvider } from "@/lib/ads/registry";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { MIN_RATINGS_FOR_PROFILE } from "@/lib/config/ratings";
 import { toFeedItem, FeedSkeleton, EmptyState } from "./FeedStates";
+import { useWatchedIds } from "./hooks/useWatchedIds";
 import { toast } from "sonner";
 
 const AD_INTERVAL = 8; // insert an ad band after every N cards (only when ads are on)
@@ -99,6 +100,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   };
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
   const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
+  const [watchedIds, setWatchedIds] = useWatchedIds();
   const [userRatings, setUserRatings] = useState<Record<number, number>>({});
   const [needsRatings, setNeedsRatings] = useState(false);
   const [staleWarning, setStaleWarning] = useState<string | null>(null);
@@ -204,6 +206,17 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
     }).catch(() => null);
 
     toast.success(inList ? "Removed from watchlist" : "Added to watchlist");
+  }
+
+  async function handleWatched(item: FeedItem) {
+    setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
+    setWatchedIds((prev) => new Set([...prev, item.tmdbId]));
+    await fetch("/api/watched", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tmdbId: item.tmdbId, tmdbType: item.tmdbType, title: item.title, posterPath: item.posterUrl }),
+    }).catch(() => null);
+    toast.success("Marked as watched");
   }
 
   const displayed = feed.filter((i) => {
@@ -375,10 +388,12 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
                   item={item}
                   userRating={userRatings[item.tmdbId]}
                   inWatchlist={watchlistIds.has(item.tmdbId)}
+                  inWatched={watchedIds.has(item.tmdbId)}
                   onClick={() => setSelectedItem(item)}
                   onRate={() => setSelectedItem(item)}
                   onDismiss={() => handleDismiss(item)}
                   onWatchlist={() => handleWatchlist(item)}
+                  onWatched={() => handleWatched(item)}
                 />
               </div>
               {/* Ad band every N cards — only when ads are on. Off → nothing
@@ -404,10 +419,12 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
                   item={item}
                   userRating={userRatings[item.tmdbId]}
                   inWatchlist={watchlistIds.has(item.tmdbId)}
+                  inWatched={watchedIds.has(item.tmdbId)}
                   onClick={() => setSelectedItem(item)}
                   onRate={() => setSelectedItem(item)}
                   onDismiss={() => handleDismiss(item)}
                   onWatchlist={() => handleWatchlist(item)}
+                  onWatched={() => handleWatched(item)}
                 />
               </div>
             ))}
