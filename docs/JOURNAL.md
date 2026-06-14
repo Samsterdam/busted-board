@@ -5,6 +5,52 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 18 — image fix)
+
+### Done
+
+- **Fixed broken movie images** — catalog movies dominating the feed had no poster paths, causing blank cards everywhere.
+  - Root cause 1: `posterUrl()` in `src/lib/tmdb.ts` prepended TMDB's image base to MOTN's full CDN URLs, producing invalid compound URLs. Fixed with a `path.startsWith("http")` passthrough guard.
+  - Root cause 2 (main): MOTN doesn't return `imageSet` data for most movies, so 772/875 catalog rows had `null` posterPath after the initial sync.
+  - **Fix**: `src/lib/catalog-poster-warmup.ts` — new `warmupCatalogPosters()` batch-fetches TMDB `/movie/{id}` or `/tv/{id}` for every media row with null posterPath (20 concurrent, idempotent). Called at the end of each admin sync.
+  - **Fix**: `upsertMediaAndLink` in `sync-catalog/route.ts` no longer overwrites an existing non-null posterPath with null (preserves TMDB paths across re-syncs).
+  - `src/lib/tmdb.ts` — added `fetchMovieDetails` and `fetchShowDetails` for the warmup.
+
+### Next / open
+
+- **⚠ Run admin sync** to populate the ~772 missing poster paths now that `warmupCatalogPosters` is deployed. Settings → Admin → Sync Catalog (or POST `/api/admin/sync-catalog`).
+- Add to Vercel env vars: `STREAMING_AVAILABILITY_API_KEY`, `WATCHMODE_API_KEY`, `CATALOG_SYNC_SECRET`, `ADMIN_EMAIL`, `NEXT_PUBLIC_SHOW_ADMIN=true`, `NEXT_PUBLIC_CATALOG_SYNC_SECRET`
+
+---
+
+## 2026-06-14 (session 17 — parallel: TV show support + sync hardening)
+
+### Done
+
+- **TV shows added to recommendation feed** — `buildFeed` and `buildMoreFeed` are no longer movie-only:
+  - `src/lib/recommendation-engine.ts` — full refactor: adopted `DiscoverResult` discriminated union (`TmdbMovie | TmdbShow`) throughout; added 3 TV discovery buckets (acclaimed, trending, recent) each with `with_watch_providers` filter; `seen` Set now uses composite `"type:id"` keys to prevent movie/TV ID collisions; feed balance cap (max 40% TV via `CATALOG_TV_FEED_MAX_RATIO`); bingeable ribbon applied to highly-voted TV series; catalog candidates return `DiscoverResult`-shaped items for both types; `buildMoreFeed` expanded to 6 alternating movie/TV strategies
+  - `src/lib/feed-enrichment.ts` — exported `titleOf()` and `releaseDateOf()` so the engine can reuse them
+  - `src/components/feed/RecommendationCard.tsx` — small "TV" badge next to year for TV show cards
+- **TV catalog sync** — MOTN and Watchmode clients extended to fetch series:
+  - `src/lib/motn.ts` — `parseTmdbId` now handles both `"movie/N"` and `"tv/N"` formats; `fetchMoTNTitles(serviceId, country, showType, limit)` replaces `fetchMoTNMovies`; captures `seasonCount` and `episodeCount` from MOTN response
+  - `src/lib/watchmode.ts` — `fetchWatchmodeTitles(sourceIds, mediaType, limit)` handles both movie and TV
+  - Schema: `media` table gains `seasonCount`, `episodeCount`; new `catalogSyncLog` table tracks per-platform sync state
+  - Migration `0005_plain_genesis.sql` applied to Neon DB
+- **Sync hardening** (critical — protects 500/month MOTN budget):
+  - `src/app/api/admin/sync-catalog/route.ts` — full rewrite: 24-hour cooldown per platform+type enforced via `catalogSyncLog`; monthly budget guard (`CATALOG_MOTN_SAFE_BUDGET = 450`); `?type=movie|tv|all` param (default=movie, safest); `?slug=X` for single-platform sync; skipped platforms reported in response with reason; `feedCache` cleared after sync
+  - `src/app/api/admin/sync-status/route.ts` — new `GET` endpoint: last-synced timestamps per platform+type, MOTN calls used this month
+  - `src/app/(app)/settings/page.tsx` — admin section redesigned: two separate buttons ("Sync Movies" / "Sync TV Shows"), cooldown display ("Synced Xh ago"), quota meter, both disabled during any in-flight sync
+- **Config** — `src/lib/config/catalog.ts` gains `CATALOG_SHOWS_PER_PLATFORM`, `CATALOG_SYNC_COOLDOWN_MS`, `CATALOG_MOTN_MONTHLY_BUDGET`, `CATALOG_MOTN_SAFE_BUDGET`, `CATALOG_TV_FEED_MAX_RATIO`
+
+### Next / open
+
+- Run "Sync TV Shows" in Settings to populate TV catalog (~55 MOTN calls; 61 used so far of 500, resets 2026-07-01)
+- Add Vercel env vars (same as session 16 list — these are not yet in production)
+- Future: "Sync TV Shows" reveals what content is popular — use `seasonCount` for bingeable logic once data is populated
+- Future: "Watch on [Platform]" deep-link button in `MovieDetailModal` using MOTN deep-link data
+
+---
+
 ## 2026-06-14 (session 17 — streaming availability API call reduction)
 
 ### Done
