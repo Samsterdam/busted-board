@@ -5,6 +5,45 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 3)
+
+### Done
+- **Fixed free/AVOD platform feed starvation** (`recommendation-engine.ts`):
+  - `buildFeed` was generating candidates from generic TMDB queries (trending, high-rated, recent) with no platform filter, then checking providers after the fact. For Roku Channel, Crackle, YouTube Free, etc. the overlap with generic "popular/highly-rated" movies was near-zero — users got 1–2 results.
+  - Added a 5th parallel bucket using TMDB `with_watch_providers` + `watch_region` params (`vote_average.desc`, `vote_count.gte: 50`) so the candidate pool contains movies TMDB already knows are on the user's platforms. These fill the lookup budget first.
+  - `buildMoreFeed` also fixed: all 4 pagination strategies now include `with_watch_providers` + `watch_region`, so every "load more" page is pre-filtered to the user's platforms.
+
+### Next / open
+- Carryover from session 2 still open (see below).
+
+---
+
+## 2026-06-14 (session 2)
+
+### Done
+- **Completed two stopped sessions' work** — all 6 commits on local `master`, all gates green (tsc 0 errors, lint 0 errors, 19 tests pass).
+- **`watched` table wired end-to-end:**
+  - `9449b12` feat(watched): schema + migration + `/api/watched` route
+  - `2b7700f` fix(engine): `buildFeed` now queries the `watched` table and filters those IDs; removed the dead `watchlistRows` query (was computed, suppressed with `void`, never used); `buildMoreFeed` also fixed to filter both `ratings` and `watched` (was only filtering `seenSet` + `dismissedIds`)
+  - `a8c2fc1` feat(feed): Eye icon button on card hover overlay; `useWatchedIds` hook loads seen IDs on mount; `handleWatched` removes card optimistically + POSTs + toasts
+  - `66d9cb3` feat(watched-page): "Seen (N)" third tab in WatchedTabs backed by `watched` table; delete button (DELETE `/api/watched`) to undo
+- **Quiz:**
+  - `b13226f` feat(quiz): config + `/api/quiz` route (was already written, just committed)
+  - `c0c5ae1` feat(quiz-ui): `/quiz` page (like/dislike list, submit disabled until ≥1 answer, redirects to feed), `loading.tsx`, "Take Quiz →" CTA on taste page in both the empty-state block and the profile header
+
+### Decisions
+- `watchlistIds` was removed from the engine entirely — it was a dead DB query with no downstream use.
+- `RecommendationFeed.tsx` is 470 lines (under the hard 500 gate); `WatchedTabs.tsx` is 314 (advisory but under hard gate).
+- Quiz API is movie-only (trending + discover) — TV shows deferred; see below.
+
+### Next / open
+- **Push to `origin/master`** — 8 commits ahead. Watch CI for migration-drift check (new `watched` migration must be recognized).
+- **Run the DB migration** on the Neon instance (`npm run db:migrate` or Vercel env). The `watched` table only exists in code until migrated.
+- **TV shows in quiz** — quiz API fetches movies only; a user who primarily watches TV gets incomplete taste data. Deferred design decision.
+- Carryover: `enrich()` vs `enrichToFeedItems()` intentional divergence; `recommendation-engine.ts` at 327 lines (soft-300 advisory); behavioral spot-check of live app still not done.
+
+---
+
 ## 2026-06-14
 
 ### Done

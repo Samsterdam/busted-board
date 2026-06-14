@@ -142,16 +142,24 @@ export async function buildFeed(
   const recentCutoff = new Date();
   recentCutoff.setMonth(recentCutoff.getMonth() - RECENT_WITHIN_MONTHS);
 
-  const [trending, hiddenGems, classics, recent] = await Promise.all([
+  const providerParam: Record<string, string> = userPlatformTmdbIds.length > 0
+    ? { with_watch_providers: userPlatformTmdbIds.join("|"), watch_region: region }
+    : {};
+
+  const [trending, hiddenGems, classics, recent, onPlatform] = await Promise.all([
     getTrendingMovies().then((r) => r.results ?? []).catch(() => []),
     fetchCandidateBucket({ "vote_average.gte": "7.5", "vote_count.gte": "500", "popularity.lte": "20", sort_by: "vote_average.desc" }),
     fetchCandidateBucket({ "vote_average.gte": "7.5", "primary_release_date.lte": `${currentYear - CLASSICS_MIN_AGE_YEARS}-12-31`, sort_by: "vote_average.desc" }),
     fetchCandidateBucket({ "primary_release_date.gte": recentCutoff.toISOString().split("T")[0], sort_by: "popularity.desc" }),
+    userPlatformTmdbIds.length > 0
+      ? fetchCandidateBucket({ ...providerParam, sort_by: "vote_average.desc", "vote_count.gte": "50" })
+      : Promise.resolve([] as TmdbMovie[]),
   ]);
 
   const seen = new Set<number>();
   const allCandidates: TmdbMovie[] = [];
-  for (const movie of [...trending, ...hiddenGems, ...classics, ...recent]) {
+  // onPlatform first so provider-confirmed titles fill the lookup budget before generic buckets
+  for (const movie of [...onPlatform, ...trending, ...hiddenGems, ...classics, ...recent]) {
     if (!seen.has(movie.id)) { seen.add(movie.id); allCandidates.push(movie); }
   }
 
@@ -260,11 +268,15 @@ export async function buildMoreFeed(
   const watchedIdsMore = new Set(watchedRowsMore.map((r) => r.tmdbId));
   const dismissedIds = new Set(dismissedRows.map((r) => r.tmdbId));
 
+  const providerParam: Record<string, string> = userPlatformTmdbIds.length > 0
+    ? { with_watch_providers: userPlatformTmdbIds.join("|"), watch_region: region }
+    : {};
+
   const strategies: Record<string, string>[] = [
-    { sort_by: "vote_average.desc", "vote_count.gte": "500" },
-    { sort_by: "popularity.desc" },
-    { sort_by: "vote_average.desc", "vote_count.gte": "200", "primary_release_date.lte": `${new Date().getFullYear() - MORE_FEED_OLD_MIN_AGE_YEARS}-12-31` },
-    { sort_by: "primary_release_date.desc", "vote_average.gte": "6.5" },
+    { ...providerParam, sort_by: "vote_average.desc", "vote_count.gte": "500" },
+    { ...providerParam, sort_by: "popularity.desc" },
+    { ...providerParam, sort_by: "vote_average.desc", "vote_count.gte": "200", "primary_release_date.lte": `${new Date().getFullYear() - MORE_FEED_OLD_MIN_AGE_YEARS}-12-31` },
+    { ...providerParam, sort_by: "primary_release_date.desc", "vote_average.gte": "6.5" },
   ];
   const strategy = strategies[(page - 2) % strategies.length];
   const tmdbPage = Math.ceil((page - 1) / strategies.length) + 1;
