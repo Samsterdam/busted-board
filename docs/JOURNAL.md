@@ -53,7 +53,8 @@ what's next, and any decisions made. Keep entries terse.
 - **Divergence note documented**: `enrichToFeedItems` (browse/search, mixed movie+TV `DiscoverResult[]`) vs inline enrichment in `buildFeed` (movie-only, optimised for ranked feed) — intentional split, comment in both files.
 
 ### Next / open (manual — Sam only)
-- Delete 3 quiz-generated watched entries: Office Romance (1★), Backrooms (5★), Project Hail Mary (5★) — got `source='user'` from migration default, not real ratings.
+
+- ~~Delete 3 quiz-generated watched entries~~ — done.
 - Google OAuth app verification (Google Cloud Console → OAuth consent screen → Submit for verification) — removes "unverified app" warning.
 - OWASP ZAP scan against live site — run after current deploy goes green.
 - Verify current Vercel deploy (`804ce56`) green, then recheck securityheaders.com.
