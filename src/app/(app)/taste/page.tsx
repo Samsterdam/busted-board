@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/PageShell";
 import { VibeTagEditor } from "@/components/taste/VibeTagEditor";
+import { RatingDistribution } from "@/components/taste/RatingDistribution";
 import { toast } from "sonner";
 import { MIN_RATINGS_FOR_PROFILE } from "@/lib/config/ratings";
 
@@ -17,19 +18,27 @@ interface TasteProfile {
   tone_description: string | null;
 }
 
+interface RatingStats {
+  distribution: Record<number, number>;
+  total: number;
+}
+
 export default function TastePage() {
   const [profile, setProfile] = useState<TasteProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [ratingCount, setRatingCount] = useState(0);
+  const [stats, setStats] = useState<RatingStats | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/taste-profile/analyze").then((r) => r.json()),
       fetch("/api/ratings").then((r) => r.json()),
-    ]).then(([taste, rated]) => {
+      fetch("/api/ratings/stats").then((r) => r.json()),
+    ]).then(([taste, rated, ratingStats]) => {
       setProfile(taste.profile);
       setRatingCount(rated.ratings?.length ?? 0);
+      setStats(ratingStats);
     }).catch(() => null).finally(() => setLoading(false));
   }, []);
 
@@ -129,6 +138,10 @@ export default function TastePage() {
           <ChipSection label="You tend to avoid" items={profile.avoid_themes} color="destructive" />
           <ChipSection label="Directors you like" items={profile.fav_directors} color="muted" />
           <ChipSection label="Actors you enjoy" items={profile.fav_actors} color="muted" />
+
+          {stats && stats.total > 0 && (
+            <RatingDistribution distribution={stats.distribution} />
+          )}
 
           <div>
             <p className="text-sm font-medium mb-2">Vibes (tap to edit)</p>
