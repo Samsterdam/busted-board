@@ -5,6 +5,24 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 13)
+
+### Done
+- **Surprise Me follow-up** (commit `bffd315`):
+  - Replaced single-card view with 3-card `RecommendationCard` layout
+  - Reshuffle cycles through pool of 9; exhausted pool re-fetches from new `/api/recommendations/surprise` endpoint
+  - Mood filter (8 genre chips) appears after 2 reshuffles — restricted to movie+TV genre intersection to prevent silent TV genre mismatch
+  - Dismiss/watched/thumbs-up remove cards from pool optimistically
+  - Empty state with contextual CTA
+  - `page.tsx` converted to server component with platform guard
+- **Bingeable ribbon** (global): `📺 Bingeable` in `RibbonBadge` + logic in `feed-enrichment.ts`'s `enrichToFeedItems` — TV shows with `voteCount >= 500` and no existing ribbon; lowest priority
+
+### Next / open
+- **Bingeable series preference**: "Input series I've loved → find similar ones" — deferred, needs its own plan
+- **Google OAuth app verification**: submit in Google Cloud Console to remove unverified-app warning for new users
+
+---
+
 ## 2026-06-14 (session 12)
 
 ### Done
