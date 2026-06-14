@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { APP_URL, APP_SHARE_TEXT } from "@/lib/config/app";
 import { MS_PER_DAY, MS_PER_HOUR } from "@/lib/config/durations";
+import { CATALOG_MOTN_MONTHLY_BUDGET } from "@/lib/config/catalog";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
@@ -50,7 +51,7 @@ export default function SettingsPage() {
   const [syncStatus, setSyncStatus] = useState<{
     motnCallsThisMonth: number;
     motnMonthlyBudget: number;
-    lastSynced: Record<string, { syncedAt: string; itemCount: number }>;
+    lastSynced: Record<string, { syncedAt: string; itemCount: number; callsUsed: number }>;
   } | null>(null);
   const isAdmin = process.env.NEXT_PUBLIC_SHOW_ADMIN === "true";
   // Captured at render time so cooldown checks are pure (no Date.now() in component functions)
@@ -58,6 +59,7 @@ export default function SettingsPage() {
 
   const COOLDOWN_MS = MS_PER_DAY;
   const HOURS_PER_DAY = MS_PER_DAY / MS_PER_HOUR;
+  const QUOTA_PCT = 100;
 
   function lastSyncedLabel(key: string): string {
     const row = syncStatus?.lastSynced?.[key];
@@ -274,48 +276,56 @@ export default function SettingsPage() {
             </h2>
             <div className="rounded-xl border border-border bg-card p-4 space-y-4">
               <div>
-                <p className="text-sm font-medium mb-1">Sync Streaming Catalog</p>
-                {syncStatus && (
-                  <p className="text-xs text-muted-foreground">
-                    MOTN API: {syncStatus.motnCallsThisMonth} / {syncStatus.motnMonthlyBudget} calls used this month
-                  </p>
-                )}
-              </div>
-
-              {syncResult && (
-                <p className="text-xs text-green-400">{syncResult}</p>
-              )}
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground">{lastSyncedLabel("all:movie")}</p>
-                  <Button
-                    variant="outline"
-                    className="w-full text-xs"
-                    onClick={() => handleSyncCatalog("movie")}
-                    disabled={syncing !== null || isCoolingDown("all:movie")}
-                    title={isCoolingDown("all:movie") ? "Wait 24h between movie syncs" : "Sync movies (~55 API calls)"}
-                  >
-                    {syncing === "movie" ? "Syncing…" : isCoolingDown("all:movie") ? "Movies (cooldown)" : "Sync Movies"}
-                  </Button>
+                <p className="text-sm font-medium mb-2">Sync Streaming Catalog</p>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted-foreground">MOTN API quota</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {syncStatus?.motnCallsThisMonth ?? "—"} / {syncStatus?.motnMonthlyBudget ?? CATALOG_MOTN_MONTHLY_BUDGET} calls this month
+                  </span>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground">{lastSyncedLabel("all:tv")}</p>
-                  <Button
-                    variant="outline"
-                    className="w-full text-xs"
-                    onClick={() => handleSyncCatalog("tv")}
-                    disabled={syncing !== null || isCoolingDown("all:tv")}
-                    title={isCoolingDown("all:tv") ? "Wait 24h between TV syncs" : "Sync TV shows (~55 API calls)"}
-                  >
-                    {syncing === "tv" ? "Syncing…" : isCoolingDown("all:tv") ? "TV (cooldown)" : "Sync TV Shows"}
-                  </Button>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: syncStatus ? `${Math.min(QUOTA_PCT, (syncStatus.motnCallsThisMonth / syncStatus.motnMonthlyBudget) * QUOTA_PCT)}%` : "0%" }}
+                  />
                 </div>
               </div>
 
-              <p className="text-[10px] text-muted-foreground">
-                Each sync: ~55 MOTN API calls. Cooldown: 24h per type. Budget reserve: 50 calls/month.
-              </p>
+              {(["movie", "tv"] as const).map((type) => {
+                const key = `all:${type}`;
+                const stats = syncStatus?.lastSynced?.[key];
+                const cooling = isCoolingDown(key);
+                return (
+                  <div key={type} className="rounded-lg border border-border/50 p-3 space-y-2">
+                    <p className="text-xs font-medium">{type === "movie" ? "Movies" : "TV Shows"}</p>
+                    <div className="grid grid-cols-3 gap-1 text-[11px]">
+                      <div>
+                        <p className="text-muted-foreground">Last sync</p>
+                        <p className="font-medium">{stats ? lastSyncedLabel(key).split(" (")[0] : "Never"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Titles</p>
+                        <p className="font-medium tabular-nums">{stats?.itemCount ?? "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">API calls</p>
+                        <p className="font-medium tabular-nums">{stats?.callsUsed ?? "—"}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full text-xs"
+                      onClick={() => handleSyncCatalog(type)}
+                      disabled={syncing !== null || cooling}
+                      title={cooling ? "Wait 24h between syncs" : `~55 MOTN API calls`}
+                    >
+                      {syncing === type ? "Syncing…" : cooling ? `${type === "movie" ? "Movies" : "TV Shows"} (cooldown)` : `Sync ${type === "movie" ? "Movies" : "TV Shows"}`}
+                    </Button>
+                  </div>
+                );
+              })}
+
+              {syncResult && <p className="text-xs text-green-400">{syncResult}</p>}
             </div>
           </section>
         )}

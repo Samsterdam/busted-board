@@ -20,16 +20,17 @@ export interface MoTNTitle {
   episodeCount: number | null;
 }
 
-// MOTN returns tmdbId as "movie/603" or "tv/1396".
-// Returns null for malformed or missing values.
+// MOTN returns tmdbId as "movie/603" for films and "series/1396" for TV shows.
+// "series" maps to TMDB's "tv" type. Returns null for malformed or missing values.
 function parseTmdbId(raw: string | null | undefined): { id: number; type: "movie" | "tv" } | null {
   if (!raw) return null;
   const parts = raw.split("/");
   if (parts.length !== 2) return null;
-  if (parts[0] !== "movie" && parts[0] !== "tv") return null;
+  if (parts[0] !== "movie" && parts[0] !== "tv" && parts[0] !== "series") return null;
   const n = parseInt(parts[1], 10);
   if (isNaN(n)) return null;
-  return { id: n, type: parts[0] as "movie" | "tv" };
+  const type: "movie" | "tv" = parts[0] === "movie" ? "movie" : "tv";
+  return { id: n, type };
 }
 
 function extractPosterPath(imageSet: Record<string, string> | null | undefined): string | null {

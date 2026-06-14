@@ -23,11 +23,12 @@ export async function GET() {
 
   const allRows = await db.select().from(catalogSyncLog);
 
-  const lastSynced: Record<string, { syncedAt: string; itemCount: number }> = {};
+  const lastSynced: Record<string, { syncedAt: string; itemCount: number; callsUsed: number }> = {};
   for (const row of allRows) {
     lastSynced[`${row.slug}:${row.mediaType}`] = {
       syncedAt: row.syncedAt.toISOString(),
       itemCount: row.itemCount,
+      callsUsed: row.callsUsed,
     };
   }
 
