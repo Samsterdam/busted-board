@@ -5,6 +5,24 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 24 — YouTube feed fix + migration)
+
+### Done
+
+- **YouTube feed fix** — TMDB provider 235 confirmed correct for YouTube Free. Root cause: free-platform titles (YouTube, Tubi, Pluto) couldn't compete against Netflix/Prime for top-60 slots in the discover query. Fixed by adding a dedicated `freePlatformMovies` bucket in `buildFeed` that queries only the user's free platforms with a lower vote-count floor (`10` vs `50`).
+- **getScores parallelized** — was `await` inside `for...of` (up to 30 × 8s OMDB timeout = 4 min cold). Replaced with `Promise.all` in both `buildFeed` and `buildMoreFeed`. Cold-cache load time drops from minutes to ~8s worst case.
+- **Committed prior-session leftovers** — community free-links feature (schema migration 0007, API routes, config, form component) had never been committed; all pushed now.
+- **Migration 0007 applied** — `community_links` and `community_link_flags` tables are live in Neon.
+
+### Open
+
+- **Wire `CommunityLinkSubmitForm` into `MovieDetailModal`** — component and API exist; UI connection not made yet.
+- **Stripe** — account, 2 products ($3/mo, $25/yr), 5 env vars in Vercel, webhook.
+- **Deploy** — current master is live on Vercel (auto-deploys on push).
+- **r/trakt post**, **Google Search Console**, **og-default.png**, **custom domain** — see session 21 entry.
+
+---
+
 ## 2026-06-14 (session 20 wrap-up — revenue setup complete)
 
 ### What was built this session (sessions 20–23 combined)
