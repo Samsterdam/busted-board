@@ -5,6 +5,16 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 5)
+
+### Done
+- **Fixed card action button tooltips** (`RecommendationCard.tsx`): X / bookmark / eye buttons had `aria-label` but no visible tooltip on hover. Wrapped each in `Tooltip`/`TooltipTrigger`/`TooltipContent` (`side="left"`) using the existing Base UI pattern from `ScoreDisplay.tsx`. `TooltipProvider` already global in `layout.tsx` — no other changes needed.
+
+### Next / open
+- Carryover from prior sessions still open (see below).
+
+---
+
 ## 2026-06-14 (session 4)
 
 ### Done
