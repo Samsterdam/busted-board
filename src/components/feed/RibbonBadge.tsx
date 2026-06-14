@@ -4,6 +4,7 @@ const RIBBON_CONFIG: Record<string, { label: string; className: string }> = {
   gem: { label: "💎 Hidden Gem", className: "bg-teal-900/80 text-teal-300" },
   favorite: { label: "⭐ Fan Favorite", className: "bg-amber-900/80 text-amber-300" },
   new: { label: "🆕 New Release", className: "bg-blue-900/80 text-blue-300" },
+  bingeable: { label: "📺 Bingeable", className: "bg-indigo-900/80 text-indigo-300" },
 };
 
 export function RibbonBadge({ ribbon }: { ribbon: string | null }) {

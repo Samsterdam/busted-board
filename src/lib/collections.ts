@@ -42,8 +42,8 @@ const SORT_POPULAR = "popularity.desc";
 // filter (TMDB silently ignores it), so "bingeable" is approximated by
 // long-tail popularity: a high vote_count means a widely-watched, established
 // show — the kind worth committing to.
-const BINGEABLE_MIN_VOTES = "500";
-const BINGEABLE_MIN_RATING = "7";
+export const BINGEABLE_MIN_VOTES = "500";
+export const BINGEABLE_MIN_RATING = "7";
 // Keeps tiny national catalogs from surfacing un-rated noise.
 const NATIONAL_MIN_VOTES = "20";
 
