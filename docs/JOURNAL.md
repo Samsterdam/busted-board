@@ -5,6 +5,23 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 12)
+
+### Done
+- **Multi-user readiness shipped**: onboarding gate, landing page redesign, OG image, account deletion, share button, bingeable constants exported — all committed and pushed. Migration `0003_burly_bushwacker.sql` applied to production Neon DB and stamped in `drizzle.__drizzle_migrations`. Google Cloud OAuth branding filled in (app name, homepage, privacy/terms URLs).
+- **Removed chat/AI search**: nav item, page, API route, and `interpretSearchQuery` from `gemini.ts` all deleted.
+- **Reviewed Surprise Me page** (built in session 11 by a parallel session): 1-card detail view with poster, scores, whyYoullLikeThis, overview, platforms, inline rating, watchlist/seen buttons. Uses existing personalized feed pool.
+
+### Next / open
+- **Surprise Me follow-up** (approved plan in `.claude/plans/and-we-make-a-robust-petal.md`):
+  - Switch to 3-card layout
+  - Mood filter ("What are you in the mood for?") appears after 2 reshuffles — genre chips (intersection of movie + TV genre maps only: Action, Animation, Comedy, Crime, Documentary, Drama, Mystery, Sci-Fi)
+  - Bingeable ribbon on TV show cards globally (voteCount ≥ 500, lowest ribbon priority)
+- **Bingeable series preference** (separate session): "Input series I've loved → find similar ones"
+- **Contact email** in `/privacy` and `/terms` is a Google Form link (resolved)
+
+---
+
 ## 2026-06-14 (session 11)
 
 ### Done
