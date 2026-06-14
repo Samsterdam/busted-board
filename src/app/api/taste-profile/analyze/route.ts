@@ -57,7 +57,7 @@ export async function POST() {
 export async function GET() {
   const session = await auth();
   const userId = session?.user?.id;
-  if (!userId) return Response.json({ profile: null });
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const [profile] = await db.select().from(tasteProfile).where(eq(tasteProfile.userId, userId)).limit(1);
   if (!profile?.topThemes) return Response.json({ profile: null });

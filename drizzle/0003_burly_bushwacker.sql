@@ -1,0 +1,1 @@
+ALTER TABLE "ratings" ADD COLUMN "source" text DEFAULT 'user' NOT NULL;

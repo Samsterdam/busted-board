@@ -1,7 +1,11 @@
+import { auth } from "@/auth";
 import { getTrendingMovies, getMovieDetails } from "@/lib/tmdb";
 import { SEED_MOVIES_LIMIT } from "@/lib/config/feed";
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const trending = await getTrendingMovies();
     const top = trending.results.slice(0, SEED_MOVIES_LIMIT);

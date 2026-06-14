@@ -11,6 +11,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
+import { RATING_SOURCE_USER } from "@/lib/config/ratings";
 
 // "user" and "account" (singular) — required by Auth.js DrizzleAdapter
 export const users = pgTable("user", {
@@ -59,6 +60,7 @@ export const ratings = pgTable("ratings", {
   rating: integer("rating").notNull(),
   notes: text("notes"),
   watchStatus: text("watch_status").notNull().default("watched"),
+  source: text("source").notNull().default(RATING_SOURCE_USER),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

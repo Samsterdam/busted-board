@@ -19,4 +19,7 @@ export const env = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY!,
   /** Optional — score enrichment degrades gracefully when unset. */
   OMDB_API_KEY: process.env.OMDB_API_KEY,
+  /** Optional — rate limiting via Upstash Redis. Skipped when unset (local dev). */
+  UPSTASH_REDIS_REST_URL:   process.env.UPSTASH_REDIS_REST_URL,
+  UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
 } as const;

@@ -8,3 +8,6 @@ export const QUIZ_DISLIKE_RATING = RATING_MIN;
 
 /** How many recognizable titles to present in one quiz pass. */
 export const QUIZ_SIZE = 15;
+
+/** Maximum number of answers accepted in a single quiz POST submission. */
+export const QUIZ_MAX_ANSWERS = 50;

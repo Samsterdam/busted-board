@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ratings } from "@/lib/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { RATING_MIN, RATING_MAX } from "@/lib/config/ratings";
+import { RATING_MIN, RATING_MAX, NOTES_MAX_LENGTH, TITLE_MAX_LENGTH } from "@/lib/config/ratings";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -45,6 +45,12 @@ export async function POST(request: Request) {
   }
   if (body.rating < RATING_MIN || body.rating > RATING_MAX) {
     return Response.json({ error: "Rating must be 1–5" }, { status: 400 });
+  }
+  if (body.title.length > TITLE_MAX_LENGTH) {
+    return Response.json({ error: `Title must be ${TITLE_MAX_LENGTH} characters or fewer` }, { status: 400 });
+  }
+  if (body.notes !== undefined && body.notes.length > NOTES_MAX_LENGTH) {
+    return Response.json({ error: `Notes must be ${NOTES_MAX_LENGTH} characters or fewer` }, { status: 400 });
   }
 
   const [existing] = await db

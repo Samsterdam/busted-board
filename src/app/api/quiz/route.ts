@@ -4,7 +4,8 @@ import { ratings, watched, dismissedItems, feedCache } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { getTrendingMovies, discoverMovies, type TmdbMovie } from "@/lib/tmdb";
 import { YEAR_PREFIX_LENGTH } from "@/lib/config/feed";
-import { QUIZ_SIZE, QUIZ_LIKE_RATING, QUIZ_DISLIKE_RATING } from "@/lib/config/quiz";
+import { QUIZ_SIZE, QUIZ_LIKE_RATING, QUIZ_DISLIKE_RATING, QUIZ_MAX_ANSWERS } from "@/lib/config/quiz";
+import { TITLE_MAX_LENGTH, RATING_SOURCE_QUIZ } from "@/lib/config/ratings";
 
 interface QuizItem {
   id: number;
@@ -80,6 +81,9 @@ export async function POST(request: Request) {
   if (!Array.isArray(answers) || answers.length === 0) {
     return Response.json({ error: "No answers" }, { status: 400 });
   }
+  if (answers.length > QUIZ_MAX_ANSWERS) {
+    return Response.json({ error: "Too many answers" }, { status: 400 });
+  }
 
   const existingRows = await db
     .select({ tmdbId: ratings.tmdbId })
@@ -89,6 +93,8 @@ export async function POST(request: Request) {
 
   const toInsert = answers
     .filter((a) => a.tmdbId && (a.verdict === "like" || a.verdict === "dislike"))
+    .filter((a) => a.tmdbType === "movie" || a.tmdbType === "tv")
+    .filter((a) => typeof a.title === "string" && a.title.length > 0 && a.title.length <= TITLE_MAX_LENGTH)
     .filter((a) => !alreadyRated.has(a.tmdbId))
     .map((a) => ({
       userId,
@@ -98,6 +104,7 @@ export async function POST(request: Request) {
       posterPath: a.posterPath ?? null,
       rating: a.verdict === "like" ? QUIZ_LIKE_RATING : QUIZ_DISLIKE_RATING,
       watchStatus: "watched",
+      source: RATING_SOURCE_QUIZ,
     }));
 
   if (toInsert.length > 0) {

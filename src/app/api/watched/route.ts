@@ -7,7 +7,7 @@ import { invalidateFeedCache } from "@/lib/feed-cache";
 export async function GET() {
   const session = await auth();
   const userId = session?.user?.id;
-  if (!userId) return Response.json({ watched: [] });
+  if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const items = await db
     .select()
