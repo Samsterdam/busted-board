@@ -12,7 +12,7 @@ import { getCachedWatchProviders, prefetchWatchProviders } from "./availability"
 import { db } from "./db";
 import { ratings, dismissedItems, watched, watchlist, media, mediaLinks, platforms } from "./schema";
 import { eq, inArray, and } from "drizzle-orm";
-import { ACCESSIBLE_PROVIDER_TYPES } from "./platforms";
+import { ACCESSIBLE_PROVIDER_TYPES, FREE_PLATFORMS } from "./platforms";
 import {
   YEAR_PREFIX_LENGTH,
   FEED_PROVIDER_LOOKUP_LIMIT,
@@ -195,7 +195,12 @@ export async function buildFeed(
     ? { with_watch_providers: userPlatformTmdbIds.join("|"), watch_region: region }
     : {};
 
-  const [catalogItems, trendingMovies, hiddenGems, classics, recentMovies, onPlatformMovies,
+  const freePlatformIds = FREE_PLATFORMS.map((p) => p.tmdbId).filter((id) => userPlatformTmdbIds.includes(id));
+  const freeProviderParam: Record<string, string> = freePlatformIds.length > 0
+    ? { with_watch_providers: freePlatformIds.join("|"), watch_region: region }
+    : {};
+
+  const [catalogItems, trendingMovies, hiddenGems, classics, recentMovies, onPlatformMovies, freePlatformMovies,
          acclaimedTV, trendingTV, recentTV] = await Promise.all([
     queryCatalogCandidates(userPlatformSlugs, region),
     getTrendingMovies().then((r) => (r.results ?? []).map((m) => ({ ...m, media_type: "movie" as const }))).catch(() => [] as (TmdbMovie & { media_type: "movie" })[]),
@@ -203,6 +208,7 @@ export async function buildFeed(
     fetchMovieBucket({ "vote_average.gte": "7.5", "primary_release_date.lte": `${currentYear - CLASSICS_MIN_AGE_YEARS}-12-31`, sort_by: "vote_average.desc" }),
     fetchMovieBucket({ "primary_release_date.gte": recentCutoff.toISOString().split("T")[0], sort_by: "popularity.desc" }),
     userPlatformTmdbIds.length > 0 ? fetchMovieBucket({ ...providerParam, sort_by: "vote_average.desc", "vote_count.gte": "50" }) : Promise.resolve([] as (TmdbMovie & { media_type: "movie" })[]),
+    freePlatformIds.length > 0 ? fetchMovieBucket({ ...freeProviderParam, sort_by: "vote_average.desc", "vote_count.gte": "10" }) : Promise.resolve([] as (TmdbMovie & { media_type: "movie" })[]),
     fetchShowBucket({ "vote_average.gte": "7.5", "vote_count.gte": "500", sort_by: "vote_average.desc", ...providerParam }),
     fetchShowBucket({ sort_by: "popularity.desc", "vote_count.gte": "100", ...providerParam }),
     fetchShowBucket({ "first_air_date.gte": recentCutoff.toISOString().split("T")[0], sort_by: "popularity.desc", ...providerParam }),
@@ -212,7 +218,7 @@ export async function buildFeed(
   const catalogKeys = new Set(catalogItems.map((c) => `${c.item.media_type}:${c.item.id}`));
   const seen = new Set<string>(catalogKeys);
   const nonCatalog: DiscoverResult[] = [];
-  for (const r of [...onPlatformMovies, ...trendingMovies, ...hiddenGems, ...classics, ...recentMovies,
+  for (const r of [...onPlatformMovies, ...freePlatformMovies, ...trendingMovies, ...hiddenGems, ...classics, ...recentMovies,
                     ...acclaimedTV, ...trendingTV, ...recentTV]) {
     const key = `${r.media_type}:${r.id}`;
     if (!seen.has(key)) { seen.add(key); nonCatalog.push(r); }
@@ -307,38 +313,39 @@ export async function buildFeed(
     }));
 
   const allRanked = [...ranked, ...catalogRanked];
-  const feedItems: FeedItem[] = [];
+  const resolvedPairs = allRanked
+    .map((rec) => ({ rec, candidate: allOnPlatform.find((c) => c.item.id === rec.tmdb_id) }))
+    .filter((p): p is { rec: typeof allRanked[0]; candidate: CatalogCandidate } => p.candidate != null);
 
-  for (const rec of allRanked) {
-    const candidate = allOnPlatform.find((c) => c.item.id === rec.tmdb_id);
-    if (!candidate) continue;
-    const r = candidate.item;
-    const title = titleOf(r);
-    const dateStr = releaseDateOf(r);
-    const year = dateStr.slice(0, YEAR_PREFIX_LENGTH);
-    const scores = await getScores(r.id, r.media_type, title, year, r.vote_average, r.vote_count, r.popularity, dateStr || null);
-    const item: FeedItem = {
-      tmdbId: r.id, tmdbType: r.media_type, title, year,
-      posterUrl: posterUrl(r.poster_path, "w342"),
-      overview: r.overview ?? "",
-      originalLanguage: r.original_language,
-      platforms: candidate.platforms,
-      platformIds: candidate.platformIds,
-      audienceScore: scores.audienceScore,
-      criticsScore: scores.criticsScore,
-      cinemaScore: scores.cinemaScore,
-      voteCount: scores.voteCount,
-      ribbon: scores.ribbon,
-      scoreTooltip: scores.tooltipLines,
-      whyYoullLikeThis: rec.why_youll_like_this,
-      rank: rec.rank,
-    };
-    // Bingeable ribbon: TV shows with high vote counts get tagged as bingeable.
-    if (item.tmdbType === "tv" && !item.ribbon && (item.voteCount ?? 0) >= Number(BINGEABLE_MIN_VOTES)) {
-      item.ribbon = "bingeable";
-    }
-    feedItems.push(item);
-  }
+  const feedItems = await Promise.all(
+    resolvedPairs.map(async ({ rec, candidate }) => {
+      const r = candidate.item;
+      const title = titleOf(r);
+      const dateStr = releaseDateOf(r);
+      const year = dateStr.slice(0, YEAR_PREFIX_LENGTH);
+      const scores = await getScores(r.id, r.media_type, title, year, r.vote_average, r.vote_count, r.popularity, dateStr || null);
+      const item: FeedItem = {
+        tmdbId: r.id, tmdbType: r.media_type, title, year,
+        posterUrl: posterUrl(r.poster_path, "w342"),
+        overview: r.overview ?? "",
+        originalLanguage: r.original_language,
+        platforms: candidate.platforms,
+        platformIds: candidate.platformIds,
+        audienceScore: scores.audienceScore,
+        criticsScore: scores.criticsScore,
+        cinemaScore: scores.cinemaScore,
+        voteCount: scores.voteCount,
+        ribbon: scores.ribbon,
+        scoreTooltip: scores.tooltipLines,
+        whyYoullLikeThis: rec.why_youll_like_this,
+        rank: rec.rank,
+      };
+      if (item.tmdbType === "tv" && !item.ribbon && (item.voteCount ?? 0) >= Number(BINGEABLE_MIN_VOTES)) {
+        item.ribbon = "bingeable";
+      }
+      return item;
+    })
+  );
 
   return feedItems.sort((a, b) => a.rank - b.rank);
 }
@@ -425,34 +432,36 @@ export async function buildMoreFeed(
   );
 
   const onPlatforms = [...filteredCatalog, ...withProviders.filter((c) => c.platforms.length > 0)].slice(0, MORE_FEED_RESULT_LIMIT);
-  const feedItems: FeedItem[] = [];
-  for (const candidate of onPlatforms) {
-    const r = candidate.item;
-    const title = titleOf(r);
-    const dateStr = releaseDateOf(r);
-    const year = dateStr.slice(0, YEAR_PREFIX_LENGTH);
-    const scores = await getScores(r.id, r.media_type, title, year, r.vote_average, r.vote_count, r.popularity, dateStr || null);
-    const item: FeedItem = {
-      tmdbId: r.id, tmdbType: r.media_type, title, year,
-      posterUrl: posterUrl(r.poster_path, "w342"),
-      overview: r.overview ?? "",
-      originalLanguage: r.original_language,
-      platforms: candidate.platforms,
-      platformIds: candidate.platformIds,
-      audienceScore: scores.audienceScore,
-      criticsScore: scores.criticsScore,
-      cinemaScore: scores.cinemaScore,
-      voteCount: scores.voteCount,
-      ribbon: scores.ribbon,
-      scoreTooltip: scores.tooltipLines,
-      whyYoullLikeThis: "",
-      rank: 999,
-    };
-    if (item.tmdbType === "tv" && !item.ribbon && (item.voteCount ?? 0) >= Number(BINGEABLE_MIN_VOTES)) {
-      item.ribbon = "bingeable";
-    }
-    feedItems.push(item);
-  }
+
+  const feedItems = await Promise.all(
+    onPlatforms.map(async (candidate) => {
+      const r = candidate.item;
+      const title = titleOf(r);
+      const dateStr = releaseDateOf(r);
+      const year = dateStr.slice(0, YEAR_PREFIX_LENGTH);
+      const scores = await getScores(r.id, r.media_type, title, year, r.vote_average, r.vote_count, r.popularity, dateStr || null);
+      const item: FeedItem = {
+        tmdbId: r.id, tmdbType: r.media_type, title, year,
+        posterUrl: posterUrl(r.poster_path, "w342"),
+        overview: r.overview ?? "",
+        originalLanguage: r.original_language,
+        platforms: candidate.platforms,
+        platformIds: candidate.platformIds,
+        audienceScore: scores.audienceScore,
+        criticsScore: scores.criticsScore,
+        cinemaScore: scores.cinemaScore,
+        voteCount: scores.voteCount,
+        ribbon: scores.ribbon,
+        scoreTooltip: scores.tooltipLines,
+        whyYoullLikeThis: "",
+        rank: 999,
+      };
+      if (item.tmdbType === "tv" && !item.ribbon && (item.voteCount ?? 0) >= Number(BINGEABLE_MIN_VOTES)) {
+        item.ribbon = "bingeable";
+      }
+      return item;
+    })
+  );
 
   return feedItems.sort((a, b) => (b.audienceScore ?? 0) - (a.audienceScore ?? 0));
 }
