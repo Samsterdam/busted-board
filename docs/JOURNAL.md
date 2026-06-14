@@ -5,20 +5,46 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 25 — community free links complete)
+
+### Done
+
+- **Community free links feature** — full implementation shipped and deployed:
+  - `src/lib/config/community.ts` — domain allowlist (11 platforms), submission limits, `validateCommunityUrl()` (scheme + hostname validation)
+  - `src/lib/schema.ts` — `communityLinks` + `communityLinkFlags` tables (per-user flag dedupe, unique URL constraint, media index)
+  - `drizzle/0007_deep_senator_kelly.sql` — migration generated and applied to Neon ✓
+  - `src/app/api/community-links/route.ts` — GET (public) + POST (auth, all caps + rate limits)
+  - `src/app/api/community-links/[id]/flag/route.ts` — per-user flag dedupe, atomically increments flagCount
+  - `src/components/feed/CommunityLinkSubmitForm.tsx` — submit form component
+  - `src/components/feed/MovieDetailModal.tsx` — "Free to watch" section, empty-state CTA, flag buttons, scrollable content div
+- **Deployed** — pushed to master, Vercel auto-deploy triggered
+
+### Design decisions made
+
+- Allowlist-only (no admin queue) — piracy structurally impossible without moderation burden
+- `communityLinkFlags` dedupe table — prevents single user hitting FLAG_AUTO_HIDE_THRESHOLD (3) alone
+- `status` column kept but always `'approved'` in V1 — admin escape hatch for future manual rejection
+- Circular import avoided by adding tables directly to `schema.ts` (335 lines, under 500 hard limit)
+
+### Open / Sam's action items
+
+- **DMCA contact email** — add `dmca@` to footer before marketing the feature (safe harbor prerequisite for UGC)
+- **Stripe** — account, 2 products ($3/mo, $25/yr), 5 env vars in Vercel, webhook. See session 21 entry.
+- **r/trakt post**, **Google Search Console**, **og-default.png**, **custom domain** — see session 21 entry.
+
+---
+
 ## 2026-06-14 (session 24 — YouTube feed fix + migration)
 
 ### Done
 
 - **YouTube feed fix** — TMDB provider 235 confirmed correct for YouTube Free. Root cause: free-platform titles (YouTube, Tubi, Pluto) couldn't compete against Netflix/Prime for top-60 slots in the discover query. Fixed by adding a dedicated `freePlatformMovies` bucket in `buildFeed` that queries only the user's free platforms with a lower vote-count floor (`10` vs `50`).
 - **getScores parallelized** — was `await` inside `for...of` (up to 30 × 8s OMDB timeout = 4 min cold). Replaced with `Promise.all` in both `buildFeed` and `buildMoreFeed`. Cold-cache load time drops from minutes to ~8s worst case.
-- **Committed prior-session leftovers** — community free-links feature (schema migration 0007, API routes, config, form component) had never been committed; all pushed now.
-- **Migration 0007 applied** — `community_links` and `community_link_flags` tables are live in Neon.
+- **Migration 0007 applied** — `community_links` and `community_link_flags` tables live in Neon.
 
-### Open
+### Open (carried to session 25)
 
-- **Wire `CommunityLinkSubmitForm` into `MovieDetailModal`** — component and API exist; UI connection not made yet.
 - **Stripe** — account, 2 products ($3/mo, $25/yr), 5 env vars in Vercel, webhook.
-- **Deploy** — current master is live on Vercel (auto-deploys on push).
 - **r/trakt post**, **Google Search Console**, **og-default.png**, **custom domain** — see session 21 entry.
 
 ---
