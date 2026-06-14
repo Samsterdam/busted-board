@@ -9,7 +9,7 @@ import { rankRecommendations, type TasteProfileResult, type RankedRecommendation
 import { getScores } from "./scores";
 import { getCachedWatchProviders } from "./availability";
 import { db } from "./db";
-import { ratings, dismissedItems, watched } from "./schema";
+import { ratings, dismissedItems, watched, watchlist } from "./schema";
 import { eq } from "drizzle-orm";
 import { ACCESSIBLE_PROVIDER_TYPES } from "./platforms";
 import {
@@ -174,17 +174,19 @@ export async function buildFeed(
     if (!seen.has(movie.id)) { seen.add(movie.id); allCandidates.push(movie); }
   }
 
-  const [ratedRows, watchedRows, dismissedRows] = await Promise.all([
+  const [ratedRows, watchedRows, dismissedRows, watchlistRows] = await Promise.all([
     db.select({ tmdbId: ratings.tmdbId }).from(ratings).where(eq(ratings.userId, userId)),
     db.select({ tmdbId: watched.tmdbId }).from(watched).where(eq(watched.userId, userId)),
     db.select({ tmdbId: dismissedItems.tmdbId }).from(dismissedItems).where(eq(dismissedItems.userId, userId)),
+    db.select({ tmdbId: watchlist.tmdbId }).from(watchlist).where(eq(watchlist.userId, userId)),
   ]);
 
   const ratedIds = new Set(ratedRows.map((r) => r.tmdbId));
   const watchedIds = new Set(watchedRows.map((r) => r.tmdbId));
   const dismissedIds = new Set(dismissedRows.map((r) => r.tmdbId));
+  const watchlistIds = new Set(watchlistRows.map((r) => r.tmdbId));
 
-  const filtered = allCandidates.filter((m) => !ratedIds.has(m.id) && !watchedIds.has(m.id) && !dismissedIds.has(m.id));
+  const filtered = allCandidates.filter((m) => !ratedIds.has(m.id) && !watchedIds.has(m.id) && !dismissedIds.has(m.id) && !watchlistIds.has(m.id));
 
   const withProviders = await Promise.all(
     filtered.slice(0, FEED_PROVIDER_LOOKUP_LIMIT).map(async (movie) => {
@@ -270,14 +272,16 @@ export async function buildMoreFeed(
   page: number
 ): Promise<FeedItem[]> {
   const seenSet = new Set(seenIds);
-  const [ratedRowsMore, watchedRowsMore, dismissedRows] = await Promise.all([
+  const [ratedRowsMore, watchedRowsMore, dismissedRows, watchlistRowsMore] = await Promise.all([
     db.select({ tmdbId: ratings.tmdbId }).from(ratings).where(eq(ratings.userId, userId)),
     db.select({ tmdbId: watched.tmdbId }).from(watched).where(eq(watched.userId, userId)),
     db.select({ tmdbId: dismissedItems.tmdbId }).from(dismissedItems).where(eq(dismissedItems.userId, userId)),
+    db.select({ tmdbId: watchlist.tmdbId }).from(watchlist).where(eq(watchlist.userId, userId)),
   ]);
   const ratedIdsMore = new Set(ratedRowsMore.map((r) => r.tmdbId));
   const watchedIdsMore = new Set(watchedRowsMore.map((r) => r.tmdbId));
   const dismissedIds = new Set(dismissedRows.map((r) => r.tmdbId));
+  const watchlistIdsMore = new Set(watchlistRowsMore.map((r) => r.tmdbId));
 
   const providerParam: Record<string, string> = userPlatformTmdbIds.length > 0
     ? { with_watch_providers: userPlatformTmdbIds.join("|"), watch_region: region }
@@ -296,7 +300,7 @@ export async function buildMoreFeed(
   try {
     const result = await discoverMovies({ ...strategy, page: String(tmdbPage) });
     candidates = (result.results ?? []).filter(
-      (m) => !seenSet.has(m.id) && !ratedIdsMore.has(m.id) && !watchedIdsMore.has(m.id) && !dismissedIds.has(m.id)
+      (m) => !seenSet.has(m.id) && !ratedIdsMore.has(m.id) && !watchedIdsMore.has(m.id) && !dismissedIds.has(m.id) && !watchlistIdsMore.has(m.id)
     );
   } catch {
     return [];

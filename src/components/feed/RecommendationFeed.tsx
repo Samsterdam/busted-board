@@ -199,6 +199,10 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
       return next;
     });
 
+    if (!inList) {
+      setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
+    }
+
     await fetch("/api/watchlist", {
       method: inList ? "DELETE" : "POST",
       headers: { "Content-Type": "application/json" },
