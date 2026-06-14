@@ -95,15 +95,19 @@ export const watched = pgTable(
   (t) => [unique("watched_user_media_unique").on(t.userId, t.tmdbId, t.tmdbType)]
 );
 
-export const dismissedItems = pgTable("dismissed_items", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  tmdbId: integer("tmdb_id").notNull(),
-  tmdbType: text("tmdb_type").notNull(),
-  dismissedAt: timestamp("dismissed_at").defaultNow(),
-});
+export const dismissedItems = pgTable(
+  "dismissed_items",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    tmdbId: integer("tmdb_id").notNull(),
+    tmdbType: text("tmdb_type").notNull(),
+    dismissedAt: timestamp("dismissed_at").defaultNow(),
+  },
+  (t) => [unique("dismissed_user_media_unique").on(t.userId, t.tmdbId, t.tmdbType)]
+);
 
 export const tasteProfile = pgTable("taste_profile", {
   id: serial("id").primaryKey(),

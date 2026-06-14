@@ -84,6 +84,6 @@ export async function GET(request: Request) {
     }
   }
 
-  const feed = await enrichToFeedItems(merged.slice(0, MAX_ENRICH), platformTmdbIds, region);
+  const feed = await enrichToFeedItems(merged.slice(0, MAX_ENRICH), platformTmdbIds, region, userId);
   return Response.json({ feed });
 }

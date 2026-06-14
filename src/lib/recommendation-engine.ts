@@ -65,13 +65,24 @@ function releaseDateOf(r: DiscoverResult): string {
 // on one of the user's platforms, attach scores, and shape into FeedItems.
 // Used by the search and browse endpoints. Caller is responsible for slicing
 // the input to a sane size before calling (each item costs a providers lookup).
+// Pass userId to filter out items the user has dismissed or marked as watched.
 export async function enrichToFeedItems(
   results: DiscoverResult[],
   userPlatformTmdbIds: number[],
-  region: string
+  region: string,
+  userId?: string
 ): Promise<FeedItem[]> {
+  let excludedIds: Set<number> | null = null;
+  if (userId) {
+    const [dismissedRows, watchedRows] = await Promise.all([
+      db.select({ tmdbId: dismissedItems.tmdbId }).from(dismissedItems).where(eq(dismissedItems.userId, userId)),
+      db.select({ tmdbId: watched.tmdbId }).from(watched).where(eq(watched.userId, userId)),
+    ]);
+    excludedIds = new Set([...dismissedRows.map((r) => r.tmdbId), ...watchedRows.map((r) => r.tmdbId)]);
+  }
+  const candidates = excludedIds ? results.filter((r) => !excludedIds.has(r.id)) : results;
   const withProviders = await Promise.all(
-    results.map(async (r) => {
+    candidates.map(async (r) => {
       const title = titleOf(r);
       const dateStr = releaseDateOf(r);
       try {

@@ -1,0 +1,1 @@
+ALTER TABLE "dismissed_items" ADD CONSTRAINT "dismissed_user_media_unique" UNIQUE("user_id","tmdb_id","tmdb_type");

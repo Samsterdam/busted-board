@@ -1,13 +1,8 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { watched, watchlist, feedCache } from "@/lib/schema";
+import { watched, watchlist } from "@/lib/schema";
 import { eq, and, desc } from "drizzle-orm";
-
-// Marking something seen makes the cached feed stale (the seen title must drop
-// out), so we clear the user's feed cache and let the next load rebuild.
-async function invalidateFeedCache(userId: string) {
-  await db.delete(feedCache).where(eq(feedCache.userId, userId));
-}
+import { invalidateFeedCache } from "@/lib/feed-cache";
 
 export async function GET() {
   const session = await auth();
