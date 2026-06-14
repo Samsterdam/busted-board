@@ -1,7 +1,9 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { watchlist } from "@/lib/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
+import { getSubscriptionStatus } from "@/lib/stripe-server";
+import { WATCHLIST_FREE_LIMIT } from "@/lib/config/stripe";
 
 export async function GET() {
   const session = await auth();
@@ -24,11 +26,30 @@ export async function POST(request: Request) {
     posterPath?: string | null;
   };
 
+  // Freemium gate: check item count before the duplicate check so the count
+  // reflects what will actually be inserted (not inflated by the item itself).
   const [existing] = await db
     .select()
     .from(watchlist)
     .where(and(eq(watchlist.userId, userId), eq(watchlist.tmdbId, body.tmdbId)))
     .limit(1);
+
+  if (!existing) {
+    const sub = await getSubscriptionStatus(userId);
+    const isPaid = sub?.status === "active";
+    if (!isPaid) {
+      const [{ value: itemCount }] = await db
+        .select({ value: count() })
+        .from(watchlist)
+        .where(eq(watchlist.userId, userId));
+      if (itemCount >= WATCHLIST_FREE_LIMIT) {
+        return Response.json(
+          { error: `Free accounts can save up to ${WATCHLIST_FREE_LIMIT} titles. Upgrade to save more.` },
+          { status: 402 }
+        );
+      }
+    }
+  }
 
   if (!existing) {
     await db.insert(watchlist).values({

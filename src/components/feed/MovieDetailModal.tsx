@@ -10,6 +10,7 @@ import { CinemaScoreBadge, ThreeScoreRow } from "./ScoreDisplay";
 import { RibbonBadge } from "./RibbonBadge";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { toast } from "sonner";
+import { getWatchUrl } from "@/lib/config/affiliates";
 
 interface Props {
   item: FeedItem;
@@ -114,17 +115,33 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
             <p className="text-sm text-muted-foreground line-clamp-3">{item.overview}</p>
           )}
 
-          {/* Platforms */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">Available on:</p>
-            <div className="flex flex-wrap gap-1.5">
-              {item.platforms.map((p) => (
-                <span key={p} className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-foreground">
-                  {p}
-                </span>
-              ))}
+          {/* Platforms + Watch button */}
+          {item.platforms.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Available on:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {item.platforms.map((p) => (
+                  <a
+                    key={p}
+                    href={getWatchUrl(p, item.title)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-foreground hover:bg-muted transition-colors"
+                  >
+                    {p}
+                  </a>
+                ))}
+              </div>
+              <a
+                href={getWatchUrl(item.platforms[0], item.title)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Watch on {item.platforms[0]}
+              </a>
             </div>
-          </div>
+          )}
 
           {/* Rate */}
           <div className="space-y-2 border-t border-border pt-3">

@@ -1,0 +1,4 @@
+export const STRIPE_MONTHLY_PRICE_ID = process.env.STRIPE_PRICE_ID_MONTHLY!;
+export const STRIPE_ANNUAL_PRICE_ID = process.env.STRIPE_PRICE_ID_ANNUAL!;
+
+export const WATCHLIST_FREE_LIMIT = 50;

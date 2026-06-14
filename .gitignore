@@ -46,3 +46,5 @@ next-env.d.ts
 local.db
 local.db-shm
 local.db-wal
+
+.vercel

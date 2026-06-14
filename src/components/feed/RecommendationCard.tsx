@@ -116,7 +116,12 @@ export function RecommendationCard({
       <div className="flex flex-col gap-1.5 p-2">
         <div>
           <p className="text-sm font-semibold leading-tight line-clamp-1">{item.title}</p>
-          <p className="text-xs text-muted-foreground">{item.year}</p>
+          <p className="text-xs text-muted-foreground">
+            {item.year}
+            {item.tmdbType === "tv" && (
+              <span className="ml-1 rounded bg-primary/15 px-1 py-px text-[9px] font-medium text-primary">TV</span>
+            )}
+          </p>
         </div>
 
         {/* Cinema Score */}

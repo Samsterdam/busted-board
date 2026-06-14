@@ -261,6 +261,21 @@ export const mediaLinks = pgTable(
   ]
 );
 
+// Stripe subscription record — one per user. Absence = free tier.
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  status: text("status").notNull().default("active"), // active | canceled | past_due
+  currentPeriodEnd: timestamp("current_period_end"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Tracks when each platform+type was last synced from an external catalog API.
 // Used to enforce per-platform cooldowns and track monthly MOTN quota spend.
 export const catalogSyncLog = pgTable(

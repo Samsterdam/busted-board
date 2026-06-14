@@ -36,11 +36,11 @@ export type DiscoverResult =
   | (TmdbMovie & { media_type: "movie" })
   | (TmdbShow & { media_type: "tv" });
 
-function titleOf(r: DiscoverResult): string {
+export function titleOf(r: DiscoverResult): string {
   return r.media_type === "movie" ? r.title : r.name;
 }
 
-function releaseDateOf(r: DiscoverResult): string {
+export function releaseDateOf(r: DiscoverResult): string {
   return (r.media_type === "movie" ? r.release_date : r.first_air_date) ?? "";
 }
 
