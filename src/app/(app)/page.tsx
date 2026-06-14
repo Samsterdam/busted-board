@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
 import { RecommendationFeed } from "@/components/feed/RecommendationFeed";
 import { auth } from "@/auth";
@@ -17,6 +18,9 @@ export default async function FeedPage() {
     db.select().from(ratings).where(eq(ratings.userId, userId)),
     db.select().from(userPlatforms).where(eq(userPlatforms.userId, userId)),
   ]);
+
+  if (platforms.length === 0 && allRatings.length === 0) redirect("/setup");
+  if (platforms.length === 0) redirect("/settings");
 
   const platformChips = platforms
     .map((p) => ({

@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Busted Board",
   description: "Find something great to watch based on your taste and streaming services.",
   manifest: "/manifest.json",
+  metadataBase: new URL("https://busted-board.vercel.app"),
 };
 
 export const viewport: Viewport = {

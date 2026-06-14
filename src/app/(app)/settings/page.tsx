@@ -1,11 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { PageShell } from "@/components/layout/PageShell";
 import { Button } from "@/components/ui/button";
 import { PlatformPicker } from "@/components/onboarding/PlatformPicker";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { APP_URL, APP_SHARE_TEXT } from "@/lib/config/app";
 
 const COUNTRIES = [
   { code: "US", name: "United States" },
@@ -31,6 +43,7 @@ export default function SettingsPage() {
   const [preferCaptions, setPreferCaptions] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -63,6 +76,32 @@ export default function SettingsPage() {
       toast.error("Could not save settings.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleShare() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Busted Board", text: APP_SHARE_TEXT, url: APP_URL });
+      } else {
+        await navigator.clipboard.writeText(APP_SHARE_TEXT);
+        toast.success("Link copied to clipboard!");
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      toast.error("Could not share.");
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/user", { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      await signOut({ callbackUrl: "/login" });
+    } catch {
+      toast.error("Could not delete account. Please try again.");
+      setDeleting(false);
     }
   }
 
@@ -149,6 +188,22 @@ export default function SettingsPage() {
           {saving ? "Saving…" : "Save Settings"}
         </Button>
 
+        {/* Share */}
+        <section aria-labelledby="share-heading">
+          <h2 id="share-heading" className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Share
+          </h2>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-sm font-medium mb-1">Invite a friend</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Share Busted Board with someone who&rsquo;s tired of scrolling for something to watch.
+            </p>
+            <Button variant="outline" className="w-full" onClick={handleShare}>
+              Share Busted Board
+            </Button>
+          </div>
+        </section>
+
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: "/login" })}
@@ -156,6 +211,56 @@ export default function SettingsPage() {
         >
           Sign out
         </button>
+
+        {/* Danger Zone */}
+        <section aria-labelledby="danger-heading">
+          <h2 id="danger-heading" className="text-sm font-medium text-destructive uppercase tracking-wider mb-3">
+            Danger Zone
+          </h2>
+          <div className="rounded-xl border border-destructive/30 bg-card p-4">
+            <p className="text-sm font-medium mb-1">Delete my account</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Permanently removes your account, ratings, watchlist, and all data. This cannot be undone.
+            </p>
+            <Dialog>
+              <DialogTrigger
+                render={
+                  <Button variant="outline" className="w-full border-destructive/40 text-destructive hover:bg-destructive/10" />
+                }
+              >
+                Delete account
+              </DialogTrigger>
+              <DialogContent showCloseButton={false}>
+                <DialogHeader>
+                  <DialogTitle>Delete your account?</DialogTitle>
+                  <DialogDescription>
+                    This will permanently delete your account, ratings, watchlist, watched history, and all associated data. This cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+                  <Button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleting ? "Deleting…" : "Yes, delete everything"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </section>
+
+        <p className="text-center text-xs text-muted-foreground pt-2">
+          <Link href="/privacy" className="underline hover:text-foreground transition-colors">
+            Privacy Policy
+          </Link>
+          {" · "}
+          <Link href="/terms" className="underline hover:text-foreground transition-colors">
+            Terms of Service
+          </Link>
+        </p>
       </div>
     </PageShell>
   );

@@ -1,11 +1,25 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { signIn } from "@/auth";
+import { APP_URL } from "@/lib/config/app";
 
-export const metadata = { title: "Sign In — Busted Board" };
+export const metadata: Metadata = {
+  title: "Busted Board — Find Something Great to Watch",
+  description:
+    "Personalized movie and TV recommendations based on your taste, your platforms, and what you've actually seen.",
+  openGraph: {
+    title: "Busted Board",
+    description: "Personalized movie & TV picks for what you can actually watch.",
+    url: APP_URL,
+    siteName: "Busted Board",
+    images: [{ url: `${APP_URL}/opengraph-image` }],
+  },
+  twitter: { card: "summary_large_image" },
+};
 
-// NextAuth redirects here with `?error=<code>` (see `pages.error` in auth.config).
 const ERROR_MESSAGES: Record<string, string> = {
   Configuration: "Sign-in is misconfigured. Please try again later.",
-  AccessDenied: "Access was denied. You may not have permission to sign in.",
+  AccessDenied: "Google sign-in was cancelled or denied. Please try again.",
   Verification: "That sign-in link has expired or was already used.",
   OAuthAccountNotLinked:
     "This email is already linked to a different sign-in method.",
@@ -22,12 +36,39 @@ export default async function LoginPage({
     : null;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-6">
-      <div className="text-center">
-        <h1 className="text-4xl font-semibold text-primary mb-2">Busted Board</h1>
-        <p className="text-muted-foreground text-sm">Find something great to watch.</p>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-10 py-12">
+      {/* Hero */}
+      <div className="text-center max-w-md">
+        <h1 className="text-5xl font-bold text-primary mb-4">Busted Board</h1>
+        <p className="text-muted-foreground text-base leading-relaxed">
+          Personalized movie and TV recommendations based on your actual taste —
+          filtered to what you can watch right now.
+        </p>
       </div>
 
+      {/* Feature cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
+        <div className="rounded-xl border border-border bg-card p-5">
+          <p className="font-semibold mb-2">Pick your platforms</p>
+          <p className="text-sm text-muted-foreground">
+            Only see movies and shows available on the services you actually subscribe to.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <p className="font-semibold mb-2">Rate what you know</p>
+          <p className="text-sm text-muted-foreground">
+            The more you rate, the smarter your feed gets. Skip what you haven&rsquo;t seen.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <p className="font-semibold mb-2">Get your feed</p>
+          <p className="text-sm text-muted-foreground">
+            A personalized lineup that updates as your taste evolves — not a popularity contest.
+          </p>
+        </div>
+      </div>
+
+      {/* Sign-in card */}
       <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 space-y-4">
         {errorMessage && (
           <p
@@ -60,6 +101,18 @@ export default async function LoginPage({
 
       <p className="text-xs text-muted-foreground text-center max-w-xs">
         Your taste profile and ratings are private to your account.
+      </p>
+
+      <p className="text-xs text-muted-foreground text-center">
+        By signing in you agree to our{" "}
+        <Link href="/terms" className="underline hover:text-foreground transition-colors">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline hover:text-foreground transition-colors">
+          Privacy Policy
+        </Link>
+        .
       </p>
     </div>
   );
