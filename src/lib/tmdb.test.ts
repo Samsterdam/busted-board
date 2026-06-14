@@ -13,6 +13,12 @@ describe("posterUrl", () => {
     expect(posterUrl(null)).toBeNull();
     expect(posterUrl(undefined)).toBeNull();
   });
+
+  it("passes through full URLs unchanged (e.g. MOTN CDN images)", () => {
+    const full = "https://cdn.movieofthenight.com/image.jpg";
+    expect(posterUrl(full)).toBe(full);
+    expect(posterUrl(full, "original")).toBe(full);
+  });
 });
 
 describe("logoUrl", () => {

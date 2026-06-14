@@ -5,6 +5,32 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 17 — streaming availability API call reduction)
+
+### Done
+
+- **Reduced TMDB watch-provider API calls 70–90%** across the feed pipeline via three changes:
+  - **Strategy A (catalog bypass)** — `queryCatalogCandidates()` now JOINs `platforms` and returns `CatalogCandidate[]` with platform names/IDs pre-resolved from the DB. `buildFeed` and `buildMoreFeed` skip `getCachedWatchProviders` entirely for catalog movies; they already know their platforms. Also added `region` filter to the catalog JOIN (was previously unfiltered, could return movies from the wrong region).
+  - **Strategy B (batch prefetch)** — new `prefetchWatchProviders()` in `src/lib/availability.ts` batch-fetches all `mediaAvailability` cache rows for non-catalog candidates in one `SELECT … WHERE tmdb_id IN (…)` query before the `Promise.all` loop. Warm-cache hits skip TMDB entirely; only genuine misses still call through.
+  - **Strategy C (TTL extension)** — `AVAILABILITY_CACHE_TTL_MS` raised from 1 day → 3 days in `src/lib/config/durations.ts`. Streaming catalogs don't change hourly; 3-day freshness is fine for discovery.
+- All changes: typecheck clean, ESLint clean (no magic numbers).
+
+### Files changed
+
+- `src/lib/config/durations.ts` — TTL bump
+- `src/lib/availability.ts` — new `prefetchWatchProviders` export
+- `src/lib/recommendation-engine.ts` — `CatalogCandidate` type, updated `queryCatalogCandidates`, both feed functions refactored
+
+### Next / open
+
+- Add to Vercel env vars: `STREAMING_AVAILABILITY_API_KEY`, `WATCHMODE_API_KEY`, `CATALOG_SYNC_SECRET`, `ADMIN_EMAIL`, `NEXT_PUBLIC_SHOW_ADMIN=true`, `NEXT_PUBLIC_CATALOG_SYNC_SECRET`
+- Test the Settings → Admin → "Sync Catalog" UI button after deploying
+- Re-sync as needed; 439/500 MOTN quota remains (resets 2026-07-01)
+- Future: add `watchUrl` (deep link) using MOTN's deep link data; "Watch on [Platform]" button in `MovieDetailModal`
+- Future: pre-warm `mediaAvailability` during catalog sync (the final piece for zero cold-start TMDB calls)
+
+---
+
 ## 2026-06-14 (session 16 — parallel: provider ID fixes + catalog integration)
 
 ### Done

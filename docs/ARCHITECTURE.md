@@ -21,10 +21,13 @@ Neon PostgreSQL · Upstash Redis · Vercel
 | **TMDB API** | Movie/TV metadata, images, streaming providers | `fetch` (server-side) |
 | **Google Gemini** | Taste-profile generation + feed ranking | `@google/generative-ai` |
 | **Google OAuth** | Authentication (sole provider) | `next-auth` v5 |
+| **Movie of the Night (MOTN)** | Pre-populated streaming catalog (11 platforms, up to 100 movies each) | `fetch` (server-side, admin sync only) |
+| **Watchmode** | Pre-populated catalog for library/niche platforms (YouTube Free, Hoopla, Plex) | `fetch` (server-side, admin sync only) |
 
-No user data leaves Neon. TMDB and Gemini calls are server-to-server only
-(API keys never reach the browser). Upstash only receives an IP-keyed counter
-string — no PII.
+No user data leaves Neon. TMDB, MOTN, Watchmode, and Gemini calls are
+server-to-server only (API keys never reach the browser). MOTN and Watchmode
+are called only during admin catalog syncs — never on user requests. Upstash
+only receives an IP-keyed counter string — no PII.
 
 ---
 
@@ -95,24 +98,36 @@ buildFeed  (triggered on feed GET when cache is stale or empty)
   │       ratings, watchlist, watched, dismissedItems,
   │       tasteProfile, vibeTags, userPlatforms
   │
-  ├── 2. Build TMDB candidate buckets (parallel fetches)
-  │       trending popular  ·  top rated  ·  upcoming  ·  classics
-  │       (TV + movie for each bucket)
-  │       Budget: 60 raw candidates checked for provider availability
+  ├── 2. Catalog candidates — DB-only, no TMDB call
+  │       queryCatalogCandidates() JOINs media → mediaLinks → platforms
+  │       filtered to user's platform slugs + region
+  │       Returns CatalogCandidate objects with platform names pre-resolved
+  │       (populated by the admin sync-catalog job via MOTN + Watchmode)
   │
-  ├── 3. Filter to on-platform titles
-  │       mediaAvailability cache (24h TTL) → TMDB WatchProviders on miss
+  ├── 3. Non-catalog TMDB buckets (parallel fetches)
+  │       trending · hidden gems · classics · recent · on-platform discover
+  │       Deduplicated against catalog set
+  │       Budget: fills remaining slots up to FEED_PROVIDER_LOOKUP_LIMIT (60 total)
+  │
+  ├── 4. Provider lookup for non-catalog candidates only
+  │       prefetchWatchProviders() → single DB SELECT for all candidates
+  │       Cache hits return immediately (3-day TTL in mediaAvailability)
+  │       Cache misses → getCachedWatchProviders() → TMDB WatchProviders → write-back
   │       Exclude: already rated · watchlisted · watched · dismissed
   │
-  ├── 4. Rank via Gemini (top 30 candidates → ranked list)
-  │       Prompt includes tasteProfile + vibeTags + candidate metadata
-  │       Fallback: top-10 by TMDB popularity if Gemini returns nothing usable
+  ├── 5. Rank via Gemini (top 30 on-platform candidates)
+  │       Catalog movies sorted by MOTN rating (excluded from Gemini ranking)
+  │       Non-catalog movies ranked by Gemini against tasteProfile + vibeTags
+  │       Fallback: top-10 by vote_average if Gemini returns nothing usable
   │
-  ├── 5. Enrich: scores, ribbons, platform names  (scoresCache, mediaAvailability)
+  ├── 6. Enrich: scores, ribbons, platform names  (scoresCache)
   │
-  └── 6. Store in feedCache (JSON blob, keyed by userId)
+  └── 7. Store in feedCache (JSON blob, keyed by userId)
            Served from cache on subsequent requests until invalidated
 ```
+
+Pagination (`buildMoreFeed`) follows the same catalog-bypass and batch-prefetch
+pattern — catalog candidates lead, non-catalog candidates fill remaining slots.
 
 Cache invalidation happens when the user rates a title, marks watched, adds to
 watchlist, dismisses, or regenerates their taste profile.
@@ -151,7 +166,7 @@ set — they are genuine preference signals.
 | Data | Cache | TTL / Invalidation |
 |---|---|---|
 | Feed recommendations | `feedCache` (Neon) | Invalidated on any user action (rate, watch, dismiss, profile regen) |
-| Streaming providers | `mediaAvailability` (Neon) | 24 hours |
+| Streaming providers | `mediaAvailability` (Neon) | 3 days |
 | Scores (audience/critics) | `scoresCache` (Neon) | Read on miss; no explicit expiry (scores are slow-moving) |
 | Rate-limit counters | Upstash Redis | 1-hour sliding window; auto-expires |
 

@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Busted Board
 
-## Getting Started
+Personalized movie recommendations scoped to the streaming services you actually subscribe to. Rate what you've seen, let Gemini learn your taste, and get a ranked feed of what to watch next — filtered to Netflix, Hulu, Prime, or any other platform you've added.
 
-First, run the development server:
+**Live:** [busted-board.vercel.app](https://busted-board.vercel.app)
+
+---
+
+## Stack
+
+- **Next.js 16** (App Router) · **TypeScript** · **Tailwind CSS**
+- **Drizzle ORM** · **Neon PostgreSQL** (serverless)
+- **Upstash Redis** (rate limiting)
+- **Google Gemini** (taste profile + feed ranking)
+- **TMDB API** (metadata, images, streaming providers)
+- **NextAuth v5** (Google OAuth)
+- **Vercel** (hosting + CI/CD)
+
+---
+
+## Local Setup
+
+### Prerequisites
+
+- Node.js 20+
+- A Neon PostgreSQL project
+- TMDB and Gemini API keys (minimum to run)
+
+### Steps
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy the env template and fill in your values
+# See docs/ENV.md for every variable and where to get it
+cp .env.local.example .env.local   # or create .env.local manually
+
+# 3. Apply the database schema
+npm run db:migrate
+
+# 4. Start the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentation
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [**Architecture**](docs/ARCHITECTURE.md) — system overview, request lifecycle, recommendation engine, schema, caching
+- [**Environment Variables**](docs/ENV.md) — every env var, where to get it, Vercel setup checklist
+- [**API Reference**](docs/API.md) — all routes, request/response shapes, auth model
+- [**Security**](docs/SECURITY.md) — auth, rate limiting, secret scanning, known gaps
+- [**Journal**](docs/JOURNAL.md) — session-by-session change log and decision record
