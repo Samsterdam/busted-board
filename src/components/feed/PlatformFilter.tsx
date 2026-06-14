@@ -10,7 +10,7 @@ interface Props {
 export function PlatformFilter({ platforms, selectedPlatforms, onToggle, onClear }: Props) {
   if (platforms.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-1.5 mb-4" role="group" aria-label="Filter by streaming service">
+    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-px" role="group" aria-label="Filter by streaming service">
       {platforms.map((p) => {
         const active = selectedPlatforms.has(p.tmdbId);
         return (
@@ -19,7 +19,7 @@ export function PlatformFilter({ platforms, selectedPlatforms, onToggle, onClear
             type="button"
             onClick={() => onToggle(p.tmdbId)}
             aria-pressed={active}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               active
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -33,7 +33,7 @@ export function PlatformFilter({ platforms, selectedPlatforms, onToggle, onClear
         <button
           type="button"
           onClick={onClear}
-          className="px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
+          className="shrink-0 px-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
         >
           Clear
         </button>

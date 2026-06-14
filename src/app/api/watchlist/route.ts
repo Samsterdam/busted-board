@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { watchlist } from "@/lib/schema";
 import { eq, and, desc, count } from "drizzle-orm";
-import { getSubscriptionStatus } from "@/lib/stripe-server";
+import { getSubscriptionStatus, isStripeEnabled } from "@/lib/stripe-server";
 import { WATCHLIST_FREE_LIMIT } from "@/lib/config/stripe";
 
 export async function GET() {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     .where(and(eq(watchlist.userId, userId), eq(watchlist.tmdbId, body.tmdbId)))
     .limit(1);
 
-  if (!existing) {
+  if (!existing && isStripeEnabled()) {
     const sub = await getSubscriptionStatus(userId);
     const isPaid = sub?.status === "active";
     if (!isPaid) {

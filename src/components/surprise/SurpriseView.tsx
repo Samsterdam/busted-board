@@ -172,7 +172,7 @@ export function SurpriseView() {
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
         {visible.map((item) => (
           <RecommendationCard
             key={item.tmdbId}

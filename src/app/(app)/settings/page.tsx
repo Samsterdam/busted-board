@@ -11,6 +11,7 @@ import { APP_URL, APP_SHARE_TEXT } from "@/lib/config/app";
 import { AdminSection } from "@/components/settings/AdminSection";
 import { DangerZoneSection } from "@/components/settings/DangerZoneSection";
 import { TraktImportSection } from "@/components/settings/TraktImportSection";
+import { LetterboxdImportSection } from "@/components/settings/LetterboxdImportSection";
 import { SubscriptionSection } from "@/components/settings/SubscriptionSection";
 
 const COUNTRIES = [
@@ -181,6 +182,8 @@ export default function SettingsPage() {
         </section>
 
         <TraktImportSection />
+
+        <LetterboxdImportSection />
 
         <SubscriptionSection />
 

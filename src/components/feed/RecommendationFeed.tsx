@@ -204,95 +204,59 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   }
 
   return (
-    <div className="px-4 py-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Busted Board</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setGemsOnly((v) => !v)}
+    <div className="px-4 pt-4">
+      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">Busted Board</h1>
+
+      {/* Sticky command bar: search + action icons + platform/search-results row */}
+      <div className="sticky top-0 z-10 -mx-4 px-4 bg-background pb-2">
+        <div className="flex items-center gap-2 mb-2">
+          <form onSubmit={runSearch} className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={'Search by title or vibe — e.g. "feel-good 90s sci-fi"'}
+              aria-label="Search for something to watch"
+              className="pl-9 pr-20"
+            />
+            <Button type="submit" size="sm" disabled={searching || !searchQuery.trim()} className="absolute right-1 top-1/2 -translate-y-1/2 h-7">
+              {searching ? "…" : "Search"}
+            </Button>
+          </form>
+          <Button variant="ghost" size="sm" onClick={() => setGemsOnly((v) => !v)}
             className={gemsOnly ? "text-primary" : "text-muted-foreground"}
-            aria-pressed={gemsOnly}
-            aria-label="Show hidden gems only"
-          >
+            aria-pressed={gemsOnly} aria-label="Show hidden gems only">
             <Gem className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={cycleSize}
-            className="text-muted-foreground"
-            aria-label={`Card size: ${cardSize}. Click to change.`}
-            title={`Card size: ${cardSize}`}
-          >
+          <Button variant="ghost" size="sm" onClick={cycleSize}
+            className="text-muted-foreground" aria-label={`Card size: ${cardSize}. Click to change.`} title={`Card size: ${cardSize}`}>
             {cardSize === "sm" && <LayoutGrid className="h-4 w-4" aria-hidden="true" />}
             {cardSize === "md" && <Grid2x2 className="h-4 w-4" aria-hidden="true" />}
             {cardSize === "lg" && <Rows3 className="h-4 w-4" aria-hidden="true" />}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => loadFeed(true)}
-            disabled={refreshing}
-            aria-label="Refresh recommendations"
-          >
+          <Button variant="ghost" size="sm" onClick={() => loadFeed(true)}
+            disabled={refreshing} aria-label="Refresh recommendations">
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
           </Button>
         </div>
+
+        {inSearchMode ? (
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <p className="min-w-0 text-sm text-muted-foreground">{searchExplanation || "Search results"}</p>
+            <Button variant="ghost" size="sm" onClick={clearSearch} className="shrink-0 text-muted-foreground">
+              <X className="h-4 w-4 mr-1" aria-hidden="true" /> Clear
+            </Button>
+          </div>
+        ) : (
+          <PlatformFilter
+            platforms={platforms}
+            selectedPlatforms={selectedPlatforms}
+            onToggle={togglePlatform}
+            onClear={() => setSelectedPlatforms(new Set())}
+          />
+        )}
       </div>
-
-      {/* Search */}
-      <form onSubmit={runSearch} className="relative mb-3">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <Input
-          type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by title or vibe — e.g. “feel-good 90s sci-fi”"
-          aria-label="Search for something to watch"
-          className="pl-9 pr-20"
-        />
-        <Button
-          type="submit"
-          size="sm"
-          disabled={searching || !searchQuery.trim()}
-          className="absolute right-1 top-1/2 -translate-y-1/2 h-7"
-        >
-          {searching ? "…" : "Search"}
-        </Button>
-      </form>
-
-      {/* Search results header */}
-      {inSearchMode && (
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <p className="min-w-0 text-sm text-muted-foreground">
-            {searchExplanation || "Search results"}
-          </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearSearch}
-            className="shrink-0 text-muted-foreground"
-          >
-            <X className="h-4 w-4 mr-1" aria-hidden="true" /> Clear
-          </Button>
-        </div>
-      )}
-
-      {/* Platform filter chips */}
-      {!inSearchMode && (
-        <PlatformFilter
-          platforms={platforms}
-          selectedPlatforms={selectedPlatforms}
-          onToggle={togglePlatform}
-          onClear={() => setSelectedPlatforms(new Set())}
-        />
-      )}
 
       {!inSearchMode && staleWarning && (
         <p className="mb-3 text-xs text-amber-400 bg-amber-900/20 rounded px-3 py-2" role="alert">

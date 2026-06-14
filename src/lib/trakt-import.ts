@@ -1,4 +1,5 @@
 import { RATING_MIN, RATING_MAX } from "./config/ratings";
+import { parseCsv, col, type ParseResult } from "./csv-parser";
 
 // Trakt uses a 1–10 rating scale; we use 1–5. Division factor for the conversion.
 const TRAKT_RATING_SCALE = 2;
@@ -20,45 +21,7 @@ export interface TraktWatchlistRow {
   year: number | null;
 }
 
-export interface ParseResult<T> {
-  rows: T[];
-  skipped: number;
-}
-
-// Parse CSV respecting quoted fields (e.g. "The Good, the Bad and the Ugly")
-function parseCsvLine(line: string): string[] {
-  const fields: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      // Escaped quote inside a quoted field
-      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
-      else { inQuotes = !inQuotes; }
-    } else if (ch === "," && !inQuotes) {
-      fields.push(current.trim());
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  fields.push(current.trim());
-  return fields;
-}
-
-function parseCsv(csv: string): { headers: string[]; rows: string[][] } {
-  const lines = csv.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter((l) => l.trim());
-  if (lines.length < 2) return { headers: [], rows: [] };
-  const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase().replace(/\s+/g, "_"));
-  const rows = lines.slice(1).map((l) => parseCsvLine(l));
-  return { headers, rows };
-}
-
-function col(headers: string[], row: string[], name: string): string {
-  const idx = headers.indexOf(name);
-  return idx >= 0 ? (row[idx] ?? "").trim() : "";
-}
+export type { ParseResult };
 
 // Trakt uses 1-10; our system uses 1-5.
 function scaleTraktRating(traktRating: number): number {

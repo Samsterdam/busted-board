@@ -62,7 +62,7 @@ export function RecommendationCard({
       {/* Action buttons (show on hover). Sibling of the poster button — not
           nested inside it — since <button> cannot contain other <button>s.
           Positioned over the poster via the card root's `relative`. */}
-      <div className="pointer-events-none absolute right-1.5 top-1.5 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="pointer-events-none absolute right-1.5 top-1.5 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         <Tooltip>
           <TooltipTrigger
             type="button"

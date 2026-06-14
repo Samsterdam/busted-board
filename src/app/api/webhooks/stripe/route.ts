@@ -1,4 +1,4 @@
-import { stripe } from "@/lib/stripe-server";
+import { stripe as getStripeClient, isStripeEnabled } from "@/lib/stripe-server";
 import { db } from "@/lib/db";
 import { subscriptions } from "@/lib/schema";
 import { eq } from "drizzle-orm";
@@ -9,6 +9,11 @@ import { MS_PER_SECOND } from "@/lib/config/durations";
 export const config = { api: { bodyParser: false } };
 
 export async function POST(request: Request) {
+  if (!isStripeEnabled()) {
+    return Response.json({ error: "Stripe not configured" }, { status: 503 });
+  }
+
+  const client = getStripeClient();
   const body = await request.text();
   const sig = request.headers.get("stripe-signature");
 
@@ -16,7 +21,7 @@ export async function POST(request: Request) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = client.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch {
     return Response.json({ error: "Invalid webhook signature" }, { status: 400 });
   }
@@ -28,7 +33,7 @@ export async function POST(request: Request) {
         if (session.mode !== "subscription" || !session.customer || !session.subscription) break;
         const customerId = typeof session.customer === "string" ? session.customer : session.customer.id;
         const subId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
-        const stripeSub = await stripe.subscriptions.retrieve(subId, { expand: ["items"] });
+        const stripeSub = await client.subscriptions.retrieve(subId, { expand: ["items"] });
         const periodEndTs = stripeSub.items.data[0]?.current_period_end;
         const periodEnd = periodEndTs ? new Date(periodEndTs * MS_PER_SECOND) : null;
 
