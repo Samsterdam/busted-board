@@ -5,6 +5,81 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 18b — image fix + feed preload)
+
+### Done
+
+- **Fixed broken movie images** — catalog movies (highest-priority feed bucket) had null `posterPath` in DB because MOTN doesn't return imageSet data; `posterUrl()` also mangled any full CDN URLs by prepending TMDB's image base.
+  - `src/lib/tmdb.ts` — `posterUrl()` now passes through full `https://` URLs unchanged.
+  - `src/lib/catalog-poster-warmup.ts` — new `warmupCatalogPosters()` batch-fetches TMDB `/movie/{id}` or `/tv/{id}` for every media row with null posterPath (20 concurrent, idempotent); called at end of each admin sync. All 1,482 rows now have posters.
+  - `sync-catalog/route.ts` — `upsertMediaAndLink` no longer overwrites existing non-null posterPath with null on re-sync.
+  - `src/lib/tmdb.ts` — added `fetchMovieDetails` and `fetchShowDetails`.
+- **Fixed AdminSection sync status** — panel never loaded on mount (no `useEffect`) and looked up `"all:movie"` key that doesn't exist in the API response (per-platform keys like `"netflix:movie"`). Fixed both: added `useEffect` + `getTypeStats()` aggregation.
+- **Feed preload — eliminate scroll-to-bottom spinner**:
+  - `src/lib/feed-cache.ts` — upgraded to v2 multi-page envelope `{ v:2, pages: { "1": [...], "2": [...] } }` (no schema migration; old flat-array handled as page 1). New `readCachePages` / `writeCachePage` helpers with upsert safety.
+  - `src/app/api/recommendations/feed/route.ts` — pages 2+ now served from cache on repeat visits; only calls `buildMoreFeed` on a true cache miss.
+  - `src/components/feed/hooks/useFeedPagination.ts` — new hook extracted from `RecommendationFeed`; owns page/loadMore/sentinel/prefetch state. Background-prefetch fires immediately after page N renders (stores Promise in ref), `loadMore` consumes it instantly or falls back to direct fetch on error.
+  - IntersectionObserver rootMargin bumped 200px → 600px (`FEED_SCROLL_PRELOAD_PX`).
+  - `RecommendationFeed.tsx` shrank 517 → 434 lines.
+
+### Next / open
+
+- Run "Sync TV Shows" in Settings (TV catalog is still unpopulated).
+- Vercel env vars still needed: see session 19 list.
+
+---
+
+## 2026-06-14 (session 20 — growth features: Trakt import, public browse, Stripe freemium, affiliate links, mobile fixes)
+
+### Done
+
+- **Competitive research** (103-agent deep research): confirmed JustWatch sold editorial independence for "Sponsored Recommendations," Trakt doubled prices ($30→$60/yr) triggering user exodus, and no single app offers cross-platform AI discovery. Busted Board's positioning: editorial independence + unified platform.
+- **Settings page refactor**: split 387-line page into `AdminSection.tsx`, `DangerZoneSection.tsx` (extracted with own state); page now ~190 lines. Added `TraktImportSection` and `SubscriptionSection` to settings layout.
+- **Trakt CSV import**:
+  - `src/lib/trakt-import.ts` — CSV parser, Trakt 1-10 → our 1-5 scale, type mapping (Movie/Show)
+  - `src/app/api/import/trakt/route.ts` — POST endpoint; batch-checks existing IDs before insert (idempotent, preserves existing ratings), logs to `importHistory`
+  - `src/components/settings/TraktImportSection.tsx` — file upload UI, result summary card
+- **Stripe freemium**:
+  - `drizzle/0006_famous_luminals.sql` — subscriptions table (generated, **needs `npx drizzle-kit migrate`**)
+  - `src/lib/config/stripe.ts` — `WATCHLIST_FREE_LIMIT = 50`, price ID constants
+  - `src/lib/stripe-server.ts` — stripe client, `getSubscriptionStatus`, `getOrCreateStripeCustomer`, checkout/portal helpers
+  - `src/app/api/billing/checkout/route.ts`, `portal/route.ts` — billing flow
+  - `src/app/api/user/subscription/route.ts` — subscription status endpoint
+  - `src/app/api/webhooks/stripe/route.ts` — webhook handler (checkout, subscription.updated, subscription.deleted); period end from `items.data[0].current_period_end` (newer Stripe API)
+  - `src/app/api/watchlist/route.ts` — freemium gate: counts items before insert, 402 if free user ≥ 50
+  - `src/components/settings/SubscriptionSection.tsx` — plan status display, upgrade/manage buttons
+- **Public browse pages** (SEO):
+  - `src/app/api/recommendations/public/browse/route.ts` — no auth, queries media+mediaLinks+platforms, optional platform filter, returns `PublicMediaItem[]`
+  - `src/app/browse/page.tsx` — public `/browse` page (ISR 1h), CTA banner, platform nav chips
+  - `src/app/top/[platform]/page.tsx` — `/top/[slug]` pages (ISR 1h), `generateStaticParams` for all 14 platforms
+  - `src/components/browse/PublicMovieCard.tsx` + `PublicMovieGrid.tsx` — server components, no auth required
+- **Affiliate links**:
+  - `src/lib/config/affiliates.ts` — `getWatchUrl(platformName, title, deepLink?)`: Amazon Associates for Prime Video; platform homepages for others
+  - `src/components/feed/MovieDetailModal.tsx` — platform badges now clickable links; added "Watch on [Platform]" primary button
+- **Mobile fixes**:
+  - Ad banner changed from `col-span-2` to `col-span-full` (was leaving a gap on 3-col mobile grid)
+  - Card action buttons: `opacity-100 sm:opacity-0 sm:group-hover:opacity-100` — always visible on mobile, hover-only on desktop
+- All changes: typecheck clean, ESLint clean, no file > 300 lines
+
+### Needs before Stripe goes live
+
+- Run `npx drizzle-kit migrate` against Neon (subscriptions table)
+- Add env vars to Vercel: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- Register Amazon Associates affiliate account → confirm `tag=bustedboard-20` is valid
+- Set up Stripe products in dashboard (monthly $3, annual $25)
+- Register Stripe webhook endpoint in dashboard pointing to `/api/webhooks/stripe`
+
+### Next / open
+
+- Post in r/trakt with Trakt import tool to capture user exodus cohort
+- SEO: submit `/browse` and `/top/*` pages to Google Search Console
+- Future: add `watchUrl` (MOTN deep links) to FeedItem → affiliate deep-link instead of search
+- Future: add more affiliate programs (Hulu, Disney+, Paramount+ via Impact) after approval
+- Future: "Leaving soon" alerts for watchlisted items (identified as high-demand feature by Trakt migrants)
+- Future: Letterboxd CSV import (same pattern as Trakt, different column names)
+
+---
+
 ## 2026-06-14 (session 19 — API call reduction, doc sync, deploy unblock)
 
 ### Done
