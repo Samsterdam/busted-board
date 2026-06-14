@@ -5,9 +5,62 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 15)
+
+### Done
+
+- **Feed initial-load flash fixed**: Restructured `RecommendationFeed` so the header, search bar, and platform chips always render from the very first SSR — only the grid area skeletons while feed data loads. Previously the whole UI was replaced by `FeedSkeleton`, causing the search bar and chips to pop in after the API call completed (looked like an ad slot loading).
+- **Search restored**: Recreated `POST /api/recommendations/search` (deleted in session 10). Simple TMDB `searchMulti` — returns title/poster/year/overview for top 8 results, no AI, no platform lookups. `similar: []`, `explanation` = `Results for "{query}"`.
+- **`(app)/loading.tsx` updated**: Now shows 3 header buttons + search bar skeleton + platform chips + 3-column grid — matches the new `RecommendationFeed` initial render.
+- **`FeedSkeleton` → `GridSkeleton`** in `FeedStates.tsx`: takes a `gridClass` prop, renders only the card grid (no full-page wrapper). Lint + types clean.
+
+### Next / open
+
+- (carry forward from session 13/14)
+
+---
+
+## 2026-06-14 (session 14)
+
+### Done
+
+- **Documentation suite** — four new docs written from verified source code:
+  - `docs/ARCHITECTURE.md` — system overview, external services, request lifecycle, recommendation engine flow, DB schema summary, caching strategy, deployment
+  - `docs/SECURITY.md` — auth model (Google OAuth + JWT), authorization (per-user isolation), rate limiting (Upstash tiers), HTTP security headers, secret management, vulnerability scanning, data privacy, known gaps
+  - `docs/API.md` — full route reference with auth requirements, rate limits, request/response shapes, and notable behaviors (all claims verified against source)
+  - `docs/ENV.md` — environment variables reference with source links, optional vs required, Vercel setup checklist, local template
+
+### Next / open
+
+- (carry forward from session 13 — see below)
+
+---
+
 ## 2026-06-14 (session 13)
 
 ### Done
+
+- **Security hardening** (headers + rate limiting):
+  - Security headers added to `next.config.ts`: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `HSTS` (2yr), `Permissions-Policy` — applied to all routes.
+  - Rate limiting via Upstash Redis in `proxy.ts`: 10 req/hr on taste-profile/analyze, 30/hr on feed, 300/hr general API, per IP. Gracefully skips when Upstash env vars absent (local dev). Upstash database created at us-east-1; keys added to Vercel env vars.
+  - Snyk GitHub integration connected; one finding (postcss XSS, build-only, ignored).
+  - Probely/Snyk ownership meta tag added to `layout.tsx`.
+- **Launch readiness** (commit `804ce56`):
+  - **Quiz TV shows**: GET now fetches trending + acclaimed TV alongside movies (4 parallel buckets); interleaves results so both types appear within QUIZ_SIZE. Fixes known-set collision bug (was `Set<number>` — movies and TV share numeric IDs; changed to composite `${tmdbId}-${type}` string key). `QuizItem.type` widened to `"movie" | "tv"`; `AnswerMap` key changed from `number` to `string`. Film/TV label added in quiz card.
+  - **Engine split**: `FeedItem`, `DiscoverResult`, `enrichToFeedItems` extracted to `src/lib/feed-enrichment.ts`; `recommendation-engine.ts` reduced to ~220 lines (build functions only). Re-exports backward-compat for 5 component importers. `browse/route.ts` import updated.
+  - **`middleware.ts` → `proxy.ts`**: renamed per Next.js 16.x deprecation.
+  - **`SurpriseView.tsx`**: ternary-as-statement lint error fixed.
+- **Divergence note documented**: `enrichToFeedItems` (browse/search, mixed movie+TV `DiscoverResult[]`) vs inline enrichment in `buildFeed` (movie-only, optimised for ranked feed) — intentional split, comment in both files.
+
+### Next / open (manual — Sam only)
+- Delete 3 quiz-generated watched entries: Office Romance (1★), Backrooms (5★), Project Hail Mary (5★) — got `source='user'` from migration default, not real ratings.
+- Google OAuth app verification (Google Cloud Console → OAuth consent screen → Submit for verification) — removes "unverified app" warning.
+- OWASP ZAP scan against live site — run after current deploy goes green.
+- Verify current Vercel deploy (`804ce56`) green, then recheck securityheaders.com.
+
+---
+
+## 2026-06-14 (session 13 — prior content)
 - **Surprise Me follow-up** (commit `bffd315`):
   - Replaced single-card view with 3-card `RecommendationCard` layout
   - Reshuffle cycles through pool of 9; exhausted pool re-fetches from new `/api/recommendations/surprise` endpoint
