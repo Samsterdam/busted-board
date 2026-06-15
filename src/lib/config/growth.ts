@@ -36,6 +36,9 @@ export const GROWTH_SEARCH_LIMIT = 5;
 /** Max characters of a Reddit post body to persist (keeps rows lean). */
 export const GROWTH_MAX_BODY_LENGTH = 2000;
 
+/** Max opportunities returned per list query. */
+export const GROWTH_OPPORTUNITIES_QUERY_LIMIT = 50;
+
 /** Gemini model to use for reply drafting. */
 export const GROWTH_GEMINI_MODEL = "gemini-2.5-flash";
 
