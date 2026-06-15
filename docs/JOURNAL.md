@@ -5,6 +5,70 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## NEXT SESSION — START HERE (last updated 2026-06-14)
+
+Complete ordered checklist. Top = highest priority / blocking.
+
+### Must do before any users see the app
+
+1. **Vercel Pro upgrade** — vercel.com/account/billing. Hobby plan prohibits commercial use; Stripe payments make this mandatory ($20/mo)
+2. **Stripe setup** — stripe.com → Create account → 2 products ($3/mo, $25/yr) → 5 env vars in Vercel → register webhook. Full step-by-step in session 21 entry below. Also add `trial_period_days: 14` to checkout config (one line, 2–3× conversion uplift)
+3. **Reddit app** — reddit.com/prefs/apps → Create app → type: **script** → copy `client_id` + `client_secret`
+4. **5 Vercel env vars (growth automation)** — `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`, `REDDIT_PASSWORD`, `GROWTH_ADMIN_SECRET` = `4NzdyOODXl1BGsNLjfk4Gzs8ZX8Yg3jpIiy9xIpzfe8=`
+5. **2 GitHub Actions secrets** — repo → Settings → Secrets: `APP_URL` = `https://busted-board.vercel.app` and `GROWTH_ADMIN_SECRET` = same value as above
+6. **Fix `DELETE /api/user` bug** — `subscriptions` and `communityLinks`/`communityLinkFlags` rows are not deleted on account deletion. Fix before any users sign up: cancel active Stripe sub via API, then delete those rows explicitly
+
+### Pre-launch polish (before GTM push)
+
+8. **Paid Google AI Studio key** — aistudio.google.com → enable billing → swap in paid key as `GEMINI_API_KEY` in Vercel. Free tier RPD limit (~500–1,500/day) will hit if any post goes viral. Do before the Reddit push. ~$3–5/mo at 1K MAU.
+9. **Switch Gemini to Flash-Lite** — change `"gemini-2.5-flash"` → `"gemini-2.5-flash-lite"` in `src/lib/gemini.ts` and `src/lib/config/growth.ts`. Our calls don't use thinking mode — no quality tradeoff, cuts Gemini cost ~5–10×.
+10. **OG image** — Canva → `public/og-default.png`, 1200×630, dark background, "Busted Board" wordmark + tagline "AI recommendations. No sponsored results." (~10 min)
+11. **Custom domain** — `bustedboard.com` (~$12/yr). Update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel
+12. **Google Search Console** — add property, submit `/sitemap.xml`. Do after domain is live
+13. **Sentry + PostHog** — `@sentry/nextjs` for errors + PostHog for product funnels/session replay. Install before any GTM push. 12 specific events to instrument — see session 27 plan at `.claude/plans/we-need-to-make-purring-giraffe.md`
+
+### Marketing (phase 1 — 0→100 users)
+
+12. **r/trakt post** — draft ready in session 21 conversation. Post after Reddit creds are live in Vercel (step 5). Fastest acquisition path — Trakt doubled to $60/yr and users are actively leaving
+13. **r/cordcutters + r/streaming** — days 3 and 5 after r/trakt. Stagger posts, disclose you're the maker
+14. **Product Hunt** — week 2 after Search Console is live. Needs OG image + demo GIF + active launch-day presence
+15. **Buffer content pipeline** — `/admin/growth` → prompt Gemini to generate 30 posts → queue to Buffer for daily drip
+
+### Engineering (phase 2 — 100→1K users)
+
+16. **Email layer (Resend)** — welcome email (day 0), weekly digest (day 7), leaving-soon alert. Install `resend`, add `src/lib/config/email.ts`, trigger from NextAuth `signIn` callback
+17. **feedCache cleanup TTL bug** — cleanup cron should use 48hr buffer; a hardcoded literal contradicts `FEED_CACHE_MAX_AGE_MS = 12hr`
+18. **Test suite (Vitest)** — see session 26 plan at `.claude/plans/bright-humming-sundae.md`. Tier 1: csv-parser, letterboxd-import, trakt-import, validateCommunityUrl. Pre-requisite: add `OMDB_API_KEY` + `AUTH_SECRET` placeholders to `vitest.config.ts`; add `src/lib/__fixtures__/` to `.gitleaks.toml`
+
+### International expansion (phase 3+)
+
+Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
+
+- **UK first** (~10–20 hrs engineering): Add BBC iPlayer/ITVX/All 4 TMDB provider IDs to `src/lib/platforms.ts`; parameterize `language` in `src/lib/tmdb.ts`; £40 ICO registration
+- **Before South Korea**: verify Watchmode API Korean coverage (`GET /sources/?regions=KR`) — if Wavve/TVING missing, core streaming-filter feature is broken
+- **Before Brazil**: check Globoplay Watchmode coverage (`GET /sources/?regions=BR`) — Amazon.com.br affiliate pays $0 on streaming, use Globoplay CPA instead
+
+---
+
+## 2026-06-14 (session 29 — advertising revenue research + BUSINESS.md Section 8)
+
+### Done
+
+- **Site advertising revenue section** — 102-agent deep research pass. Added Section 8 to `docs/BUSINESS.md` covering:
+  - Ad network landscape updated to 2026: Ezoic exited small-publisher market (250K minimum, Feb 2026); Mediavine Journey dropped to 1,000 sessions/month (Oct 2025); Raptive dropped to 25,000 pageviews/month (Oct 2025)
+  - RPM benchmarks: AdSense $1–$5, Mediavine Journey $15–$40+, Raptive $13–$47 `[2-1]`
+  - Pageview assumption anchored to Letterboxd's 10.88 pages/visit (SimilarWeb) `[2-1]`
+  - Ad revenue by MAU tier: ~$2/mo at 100 MAU (AdSense only); ~$19–$388/mo at 1K MAU; ~$194–$3,880/mo at 10K MAU
+  - Revised combined P&L table at 10K MAU showing subscription + ad stacked
+  - 8 new cited sources added to doc
+- **Pushed all 3 pending commits** — origin/master now current (growth automation + international expansion + business analysis all live)
+
+### Next
+
+No new blockers added this session. Priority order unchanged — see checklist above.
+
+---
+
 ## 2026-06-14 (session 24 — business analysis + growth automation)
 
 ### Done
