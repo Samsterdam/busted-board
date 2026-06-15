@@ -20,25 +20,25 @@ Complete ordered checklist. Top = highest priority / blocking.
 
 ### Pre-launch polish (before GTM push)
 
-8. **Paid Google AI Studio key** — aistudio.google.com → enable billing → swap in paid key as `GEMINI_API_KEY` in Vercel. Free tier RPD limit (~500–1,500/day) will hit if any post goes viral. Do before the Reddit push. ~$3–5/mo at 1K MAU.
-9. **Switch Gemini to Flash-Lite** — change `"gemini-2.5-flash"` → `"gemini-2.5-flash-lite"` in `src/lib/gemini.ts` and `src/lib/config/growth.ts`. Our calls don't use thinking mode — no quality tradeoff, cuts Gemini cost ~5–10×.
-10. **OG image** — Canva → `public/og-default.png`, 1200×630, dark background, "Busted Board" wordmark + tagline "AI recommendations. No sponsored results." (~10 min)
-11. **Custom domain** — `bustedboard.com` (~$12/yr). Update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel
-12. **Google Search Console** — add property, submit `/sitemap.xml`. Do after domain is live
-13. **Sentry + PostHog** — `@sentry/nextjs` for errors + PostHog for product funnels/session replay. Install before any GTM push. 12 specific events to instrument — see session 27 plan at `.claude/plans/we-need-to-make-purring-giraffe.md`
+- **Paid Google AI Studio key** — aistudio.google.com → enable billing → swap in paid key as `GEMINI_API_KEY` in Vercel. Free tier RPD limit (~500–1,500/day) will hit if any post goes viral. Do before the Reddit push. ~$3–5/mo at 1K MAU.
+- **Switch Gemini to Flash-Lite** — change `"gemini-2.5-flash"` → `"gemini-2.5-flash-lite"` in `src/lib/gemini.ts` and `src/lib/config/growth.ts`. Our calls don't use thinking mode — no quality tradeoff, cuts Gemini cost ~5–10×.
+- **OG image** — Canva → `public/og-default.png`, 1200×630, dark background, "Busted Board" wordmark + tagline "AI recommendations. No sponsored results." (~10 min)
+- **Custom domain** — `bustedboard.com` (~$12/yr). Update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel
+- **Google Search Console** — add property, submit `/sitemap.xml`. Do after domain is live
+- **Sentry + PostHog** — `@sentry/nextjs` for errors + PostHog for product funnels/session replay. Install before any GTM push. 12 specific events to instrument — see session 27 plan at `.claude/plans/we-need-to-make-purring-giraffe.md`
 
 ### Marketing (phase 1 — 0→100 users)
 
-12. **r/trakt post** — draft ready in session 21 conversation. Post after Reddit creds are live in Vercel (step 5). Fastest acquisition path — Trakt doubled to $60/yr and users are actively leaving
-13. **r/cordcutters + r/streaming** — days 3 and 5 after r/trakt. Stagger posts, disclose you're the maker
-14. **Product Hunt** — week 2 after Search Console is live. Needs OG image + demo GIF + active launch-day presence
-15. **Buffer content pipeline** — `/admin/growth` → prompt Gemini to generate 30 posts → queue to Buffer for daily drip
+- **r/trakt post** — draft ready in session 21 conversation. Post after Reddit creds are live in Vercel (step 5). Fastest acquisition path — Trakt doubled to $60/yr and users are actively leaving
+- **r/cordcutters + r/streaming** — days 3 and 5 after r/trakt. Stagger posts, disclose you're the maker
+- **Product Hunt** — week 2 after Search Console is live. Needs OG image + demo GIF + active launch-day presence
+- **Buffer content pipeline** — `/admin/growth` → prompt Gemini to generate 30 posts → queue to Buffer for daily drip
 
 ### Engineering (phase 2 — 100→1K users)
 
-16. **Email layer (Resend)** — welcome email (day 0), weekly digest (day 7), leaving-soon alert. Install `resend`, add `src/lib/config/email.ts`, trigger from NextAuth `signIn` callback
-17. **feedCache cleanup TTL bug** — cleanup cron should use 48hr buffer; a hardcoded literal contradicts `FEED_CACHE_MAX_AGE_MS = 12hr`
-18. **Test suite (Vitest)** — see session 26 plan at `.claude/plans/bright-humming-sundae.md`. Tier 1: csv-parser, letterboxd-import, trakt-import, validateCommunityUrl. Pre-requisite: add `OMDB_API_KEY` + `AUTH_SECRET` placeholders to `vitest.config.ts`; add `src/lib/__fixtures__/` to `.gitleaks.toml`
+- **Email layer (Resend)** — welcome email (day 0), weekly digest (day 7), leaving-soon alert. Install `resend`, add `src/lib/config/email.ts`, trigger from NextAuth `signIn` callback
+- **feedCache cleanup TTL bug** — cleanup cron should use 48hr buffer; a hardcoded literal contradicts `FEED_CACHE_MAX_AGE_MS = 12hr`
+- **Test suite (Vitest)** — see session 26 plan at `.claude/plans/bright-humming-sundae.md`. Tier 1: csv-parser, letterboxd-import, trakt-import, validateCommunityUrl. Pre-requisite: add `OMDB_API_KEY` + `AUTH_SECRET` placeholders to `vitest.config.ts`; add `src/lib/__fixtures__/` to `.gitleaks.toml`
 
 ### International expansion (phase 3+)
 
