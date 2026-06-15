@@ -64,6 +64,27 @@ sync endpoint still exists but the engine falls back to live TMDB lookups only.
 
 ---
 
+## Optional — Growth Automation
+
+Powers the `/admin/growth` dashboard: daily Reddit opportunity scanning, Gemini-assisted reply drafting, and one-click Reddit posting. The app works normally without these — the growth dashboard just shows "Reddit credentials not configured."
+
+| Variable | Where to get it | Effect when absent |
+|---|---|---|
+| `REDDIT_CLIENT_ID` | [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps) → Create app → type: **script** | Scanning and posting disabled |
+| `REDDIT_CLIENT_SECRET` | Same Reddit app page | Scanning and posting disabled |
+| `REDDIT_USERNAME` | Your Reddit account username | Scanning and posting disabled |
+| `REDDIT_PASSWORD` | Your Reddit account password | Scanning and posting disabled |
+| `GROWTH_ADMIN_SECRET` | Any random string (`openssl rand -base64 32`) | Cron scan endpoint accepts requests without auth header |
+
+All four Reddit vars must be set together. Create a "script" type app at reddit.com/prefs/apps — this gives you OAuth credentials for a single-account bot (your account). The User-Agent sent is `BustedBoard/1.0`.
+
+**GitHub Actions secrets** (for the daily cron in `.github/workflows/growth-monitor.yml`):
+
+- `APP_URL` — your production URL (e.g. `https://busted-board.vercel.app`)
+- `GROWTH_ADMIN_SECRET` — same value as the env var above
+
+---
+
 ## Vercel Setup Checklist
 
 When provisioning a new deployment:
@@ -124,4 +145,11 @@ CATALOG_SYNC_SECRET=your_random_secret
 ADMIN_EMAIL=your_google_email@gmail.com
 NEXT_PUBLIC_SHOW_ADMIN=true
 NEXT_PUBLIC_CATALOG_SYNC_SECRET=your_random_secret
+
+# Growth automation (optional — see docs/ENV.md for details)
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+REDDIT_USERNAME=your_reddit_username
+REDDIT_PASSWORD=your_reddit_password
+GROWTH_ADMIN_SECRET=your_random_secret
 ```

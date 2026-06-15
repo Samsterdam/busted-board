@@ -320,6 +320,42 @@ export const communityLinks = pgTable(
   ]
 );
 
+// --- Growth / marketing automation tables -----------------------------------
+
+// Discovered Reddit/Twitter threads where Sam can authentically engage.
+// Populated daily by the GitHub Actions cron → /api/admin/growth/scan.
+export const opportunities = pgTable(
+  "opportunities",
+  {
+    id: serial("id").primaryKey(),
+    platform: text("platform").notNull(), // "reddit" | "twitter"
+    externalId: text("external_id").notNull(), // Reddit post ID, tweet ID
+    url: text("url").notNull(),
+    title: text("title"),
+    body: text("body"),
+    subreddit: text("subreddit"),
+    author: text("author"),
+    score: integer("score").notNull().default(0),
+    foundAt: timestamp("found_at").notNull().defaultNow(),
+    status: text("status").notNull().default("pending"), // pending | drafted | posted | dismissed
+    draftResponse: text("draft_response"),
+    postedAt: timestamp("posted_at"),
+    postedUrl: text("posted_url"),
+  },
+  (t) => [unique("opportunities_external_id_unique").on(t.externalId)]
+);
+
+// Proactive social posts queued for Buffer (Twitter/X, etc.).
+export const socialPosts = pgTable("social_posts", {
+  id: serial("id").primaryKey(),
+  platform: text("platform").notNull(), // "twitter" | "linkedin"
+  content: text("content").notNull(),
+  scheduledFor: timestamp("scheduled_for"),
+  bufferId: text("buffer_id"),
+  status: text("status").notNull().default("draft"), // draft | queued | posted
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // One row per (user, link) — prevents a single user from filling the flag threshold.
 export const communityLinkFlags = pgTable(
   "community_link_flags",

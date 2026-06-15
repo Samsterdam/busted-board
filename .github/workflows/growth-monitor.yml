@@ -1,0 +1,19 @@
+name: Growth — daily Reddit scan
+
+on:
+  schedule:
+    # 9:07am EDT daily (UTC-4 in summer → 13:07 UTC)
+    - cron: "7 13 * * *"
+  workflow_dispatch: # manual trigger from Actions tab
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger opportunity scan
+        run: |
+          curl -fsSL \
+            -X POST "${{ secrets.APP_URL }}/api/admin/growth/scan" \
+            -H "Authorization: Bearer ${{ secrets.GROWTH_ADMIN_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 30

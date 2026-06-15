@@ -5,6 +5,148 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
+## 2026-06-14 (session 24 — business analysis + growth automation)
+
+### Done
+
+- **Business feasibility analysis** — 111-agent deep research pass across 28 sources. Full verified P&L at 100/1K/10K MAU, break-even (8 paying subscribers covers all infra), LTV math (annual $42.89 vs monthly $18.50), competitor benchmarks (Trakt doubled to $60/yr — live opportunity). Saved to `docs/BUSINESS.md`.
+- **Growth automation — Phase 1** — full stack built and DB migrated:
+  - `src/lib/config/growth.ts` — target subreddits, keywords, limits
+  - `src/lib/growth/reddit.ts` — Reddit OAuth client (raw fetch, no extra deps)
+  - `src/lib/growth/scanner.ts` — subreddit × keyword scan, dedup by external_id
+  - 4 API routes: `/api/admin/growth/scan`, `/opportunities`, `/draft`, `/post`
+  - Growth dashboard at `/admin/growth` — tabs (pending/drafted/posted/dismissed), manual scan button
+  - Gemini-powered draft chat (thread context preloaded, Sam types direction, agent drafts, Sam approves and clicks Post)
+  - `.github/workflows/growth-monitor.yml` — daily cron 9:07am EDT
+  - DB migration 0008 (`opportunities` + `social_posts` tables) — applied to Neon ✓
+
+### Needs Sam's action before growth automation goes live
+
+1. **Reddit app** — go to [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps), create a "script" type app, get `client_id` + `client_secret`
+2. **Vercel env vars** — add to production:
+   - `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`, `REDDIT_PASSWORD`
+   - `GROWTH_ADMIN_SECRET` — use: `4NzdyOODXl1BGsNLjfk4Gzs8ZX8Yg3jpIiy9xIpzfe8=`
+   - `ADMIN_EMAIL` (if not already set — gates the /admin/growth UI)
+3. **GitHub Actions secrets** — add to repo:
+   - `APP_URL` = `https://busted-board.vercel.app` (or custom domain when live)
+   - `GROWTH_ADMIN_SECRET` = same value as above
+4. **Deploy** — push current branch to trigger Vercel redeploy with new routes + migration
+
+### Carry-forward (from session 21)
+
+- **Stripe** — still needs: account + 2 products + 5 env vars + webhook registration
+- **Custom domain** — update `APP_URL` in `src/lib/config/app.ts`
+- **`public/og-default.png`** — 1200×630 dark background, Canva ~10 min
+- **Google Search Console** — submit sitemap after domain is live
+- **r/trakt post** — draft ready from session 21 conversation; post when Reddit creds are live
+
+---
+
+## 2026-06-14 (session 28 — international expansion research)
+
+### Done
+
+- **Full international expansion strategy document** → `docs/INTERNATIONAL-EXPANSION.md`
+- 5 parallel deep-research agents (competitive landscape, Asia, Europe, Brazil, Africa) + codebase technical gap analysis
+- Identified recommended expansion sequence: **UK → South Korea → Brazil → Germany → India/Indonesia → South Africa → Japan**
+
+### Key findings
+
+**Competitive:** Simkl (free, unlimited tracking, Plex/Kodi integrations) is the main Trakt refugee destination — not busted-board. Must differentiate from Simkl (no AI recs, no streaming filter) not just Trakt. Trakt's window is still open — wider than Feb 2025 due to compounding own-goals (May 2025 legacy price elimination, Nov 2025 redesign backlash, 2026 further limit cuts). Letterboxd is being sold by Tiny (Versant interest, April 2026). Roku self-serve API (Nov 2025) is an unoccupied hardware distribution channel.
+
+**Technical gaps confirmed:** `CATALOG_SYNC_REGION = "US"` hardcoded; `language: "en-US"` hardcoded in all TMDB calls; zero i18n infrastructure; Stripe USD-only; Amazon.com.br affiliate limited to Kindle/Android apps (not useful for streaming). Good news: TMDB watch provider path already passes `region` — adding UK platform IDs to `platforms.ts` + parameterizing `language` in `tmdb.ts` is sufficient for a working UK launch.
+
+**UK is lowest-effort entry:** ~10–20 hrs engineering (platform IDs + language param), £40/yr ICO registration, zero localization cost.
+
+**South Korea is the strongest Asia market:** 2.1 streaming subs per person (not household), BIFF Busan October 2026 is the marketing anchor, Stripe already supports KakaoPay/NAVER Pay. Neither Letterboxd nor Trakt offer regional pricing — PPP pricing (₩3,500/mo) is a genuine competitive moat.
+
+**Brazil:** Letterboxd's largest non-English market (4.2% global users). PIX via Stripe EBANX partnership (93% adult adoption). Amazon.com.br affiliate is useless — use Globoplay's CPA affiliate instead. X/Twitter has been blocked in Brazil; use TikTok + WhatsApp instead.
+
+**Critical pre-launch gate:** Verify Watchmode API Korean service coverage (`GET /sources/?regions=KR`) before committing to South Korea. If Wavve/TVING not covered, the core streaming filter feature is broken. Same for Globoplay in Brazil.
+
+### Next actions
+
+1. **Sam: check Vercel Analytics + Search Console** for existing international traffic — may change expansion priority
+2. **Verify domestic PMF metrics** before committing to Phase 1 budget
+3. **Phase 1 UK engineering:** Add BBC iPlayer/ITVX/All 4 TMDB provider IDs to `src/lib/platforms.ts`; parameterize `language` in `src/lib/tmdb.ts`; add region detection to onboarding; ICO registration (£40)
+4. **Watchmode verification:** Call `/sources/?regions=KR` and `/sources/?regions=BR` to confirm or refute Korean/Brazilian service coverage
+
+---
+
+## 2026-06-14 (session 27 — user scaling plan)
+
+### Done
+
+- **Comprehensive scaling plan developed** — full strategy at `.claude/plans/we-need-to-make-purring-giraffe.md`. No code changed this session.
+
+### Plan summary
+
+Phased roadmap across 4 dimensions: acquisition, retention, monetization, technical capacity. Phases keyed to user milestones: 0→100, 100→1K, 1K→10K, 10K+.
+
+**Phase 0 (pre-GTM blockers):** Stripe setup, OG image, Google Search Console, custom domain, Sentry error tracking.
+
+**Phase 1 (0→100):** r/trakt + r/letterboxd posts, Product Hunt. Watch the onboarding funnel (land → sign in → platforms → feed → first rating). No tech changes needed at this scale.
+
+**Phase 2 (100→1K):** Email layer (Resend), welcome email, weekly digest cron, leaving-soon alerts. Upgrade Gemini to paid API before ~500 users. Enable Neon PgBouncer (zero code, just env var swap).
+
+**Phase 3 (1K→10K):** SEO programmatic pages (`/movies/[genre]`, `/leaving-soon/[platform]`), light social graph, ad tier optimization, Neon Scale upgrade, TMDB request queue.
+
+**Metrics:** PostHog (product funnels + session replay) + Sentry (errors) + UTM params on all external links. 12 specific events to instrument before launch. Key number to watch: upgrade prompt → Stripe checkout rate (below 5% = copy problem).
+
+### Bugs found during planning
+
+1. **`DELETE /api/user` is incomplete** — `subscriptions` and `communityLinks`/`communityLinkFlags` rows are not deleted. Fix before launch: cancel active Stripe subscription via API, then delete those rows explicitly.
+2. **feedCache cleanup TTL inconsistency** — the plan originally said `24hr` but `FEED_CACHE_MAX_AGE_MS` is `12hr`. Cleanup cron should use `48hr` buffer, not a hardcoded literal that contradicts the named constant.
+
+### Key strategic decisions
+
+- Pro conversion driver: **weekly digest + leaving-soon alerts** (not "no ads" — the Trakt/Letterboxd audience runs ad-blockers)
+- Add **14-day free trial** to Stripe checkout (`trial_period_days: 14`) — one config line, 2–3× conversion uplift
+- **"Leaving soon" data**: verify MOTN/Watchmode actually expose departure dates before building the email feature around it
+- International users: add explicit US-only availability disclosure at signup (MOTN catalog is US-centric)
+- MOTN budget: stagger catalog sync to 2 platforms/day max; daily sync of all 14 platforms hits 84% of 500-call/month ceiling
+
+### Open / next session
+
+- Fix the two bugs above (user deletion + feedCache cleanup) — small, pre-launch
+- Install Sentry (`@sentry/nextjs`) + PostHog before any GTM push
+- Verify MOTN/Watchmode API for departure date availability
+
+---
+
+## 2026-06-14 (session 26 — testing plan)
+
+### Done
+
+- **Testing plan developed** — full tiered strategy documented at `.claude/plans/bright-humming-sundae.md`. No code changed this session; this was pure planning.
+
+### Plan summary
+
+**Tier 1 (pure unit tests, ready now):** `csv-parser.ts`, `letterboxd-import.ts`, `trakt-import.ts`, `validateCommunityUrl`, `getWatchUrl`, `getCinemaScoreColor`, `titleOf`/`releaseDateOf`
+
+**Tier 1.5 (extract then test):** Move `buildTitleMap`/`findMediaMatch` + `LETTERBOXD_YEAR_TOLERANCE` from Letterboxd route into `letterboxd-import.ts`. Extract Stripe webhook event dispatch into new `src/lib/stripe-events.ts` with signature `applyStripeEvent(event) => { customerId, patch } | null`.
+
+**Tier 2 (in-memory SQLite):** `getScores()` with real Drizzle-over-SQLite — `vi.mock('./db')` won't work for Drizzle's builder chain.
+
+**Tier 3 (coverage gate):** `@vitest/coverage-v8`, 70% threshold on testable `src/lib/**`, coverage on PRs only (not every master push).
+
+**Tier 4 (Playwright E2E):** Post-launch, gated on Neon "database per branch" being set up first — Vercel preview shares prod DB by default.
+
+### Foundational work required before first tests land
+
+1. Add `OMDB_API_KEY` + `AUTH_SECRET` placeholders to `vitest.config.ts`
+2. Add `src/lib/__fixtures__/**` to `.gitleaks.toml` allowlist — test fixtures will contain Stripe event IDs that trip the secret scanner
+3. Create `src/lib/__fixtures__/` directory structure (csv/, stripe/, time.ts, db.ts)
+4. Add `vi.useFakeTimers()` / `withFixedDate` helper — several tests are time-sensitive
+
+### Open / next session
+
+- Start with the 4 foundational items above (small, unblock everything else)
+- Then Tier 1 tests (no new deps, ~2–3 hrs)
+- See plan file for full priority order
+
+---
+
 ## 2026-06-14 (session 25 — community free links complete)
 
 ### Done
