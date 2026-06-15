@@ -37,7 +37,7 @@ Vercel's TOS defines commercial use as "any deployment used for the purpose of f
 | Vercel | Pro (required) | $20.00 |
 | Neon PostgreSQL | Free (0.5 GB, 100 CU-hr/mo) | $0 |
 | Upstash Redis | PAYG (~500K cmds/mo) | ~$1.00 |
-| Gemini Flash-Lite | ~400 calls × 700 tok avg | ~$0.03 |
+| Gemini 2.5 Flash *(current)* | ~1,000 calls × 4K tok avg | ~$0.30 |
 | TMDB API | Free tier | $0 |
 | **Total infra** | | **~$21/mo** |
 
@@ -48,9 +48,9 @@ Vercel's TOS defines commercial use as "any deployment used for the purpose of f
 | Vercel | Pro | $20.00 |
 | Neon | Launch ($0.106/CU-hr + $0.35/GB-mo) | ~$5 |
 | Upstash Redis | ~1M commands/mo | ~$2 |
-| Gemini Flash-Lite | ~4,000 calls/mo | ~$0.30 |
+| Gemini 2.5 Flash *(current)* | ~9,000 calls/mo | ~$3–5 |
 | TMDB API | Free | $0 |
-| **Total infra** | | **~$27/mo** |
+| **Total infra** | | **~$30/mo** |
 
 ### Tier 3: 10,000 MAU
 
@@ -59,9 +59,51 @@ Vercel's TOS defines commercial use as "any deployment used for the purpose of f
 | Vercel | Pro (may hit overage) | ~$20–40 |
 | Neon | Launch | ~$15–20 |
 | Upstash Redis | ~10M commands/mo | ~$20 |
-| Gemini Flash-Lite | ~300K calls/mo at 700 tok avg | ~$2 |
+| Gemini 2.5 Flash *(current)* | ~90K calls/mo | ~$30–50 |
 | TMDB API | Free | $0 |
-| **Total infra** | | **~$57–82/mo** |
+| **Total infra** | | **~$85–130/mo** |
+
+> **Switch from Flash to Flash-Lite to cut Gemini costs ~5–10×.** At 10K MAU Flash-Lite drops the Gemini line from ~$30–50/mo to ~$5–8/mo. See action item in Summary.
+
+### Gemini call volume assumptions
+
+**Two production surfaces call Gemini:**
+
+1. **Feed ranking (`rankRecommendations`)** — dominant. Called once per page-1 feed load when the 12-hour DB cache is cold. Effectively 1 call/user/day for daily-active users. `buildMoreFeed` (pages 2+) skips Gemini entirely.
+2. **Taste profile generation (`generateTasteProfile`)** — user-initiated, 5-min cooldown. Negligible at any scale (once per user at setup).
+3. **Growth draft chat** — admin-only, negligible.
+
+**Per-call token cost:** ~30 candidates × ~100 tokens + taste profile + prompt overhead ≈ **4K tokens/call** (3.5K input + ~500 output).
+
+**DAU/MAU assumption: 30%.** Call volumes use 30% DAU/MAU. The 12-hour feed cache means each daily user generates at most 1 Gemini call/day. Upper-bound scenario (100% DAU/MAU, every user visits every 12 hours exactly): multiply by 3.3×.
+
+| MAU | DAU (30%) | Calls/day | Calls/month |
+|-----|-----------|-----------|-------------|
+| 100 | 30 | ~33 | ~1,000 |
+| 1,000 | 300 | ~330 | ~9,000 |
+| 10,000 | 3,000 | ~3,300 | ~90,000 |
+
+### Gemini API quota tiers
+
+**Gemini 2.5 Flash free tier** has three relevant limits (verify current values at [ai.google.dev/gemini-api/docs/rate-limits](https://ai.google.dev/gemini-api/docs/rate-limits)):
+
+| Limit | Free | Paid |
+|-------|------|------|
+| RPM | 15 | 2,000 |
+| TPM | 1M | 4M |
+| RPD | ~500–1,500 | none |
+
+**RPD is the first constraint to hit**, not RPM — at normal traffic distribution, burst RPM stays comfortably under 15 until ~5K+ MAU.
+
+| MAU | Calls/day | Free RPD OK? | Free RPM OK? |
+|-----|-----------|-------------|-------------|
+| 100 | ~33 | ✓ | ✓ |
+| 500 | ~165 | ✓ (borderline if RPD=500) | ✓ |
+| 1,000 | ~330 | **Watch closely** | ✓ |
+| 2,000 | ~660 | ✗ | ✓ |
+| 10,000 | ~3,300 | ✗ | **Needs paid** |
+
+**Action: move to a paid Google AI Studio API key before any marketing push** (before first Reddit post or Product Hunt). Paid tier eliminates RPD, raises RPM to 2,000, and costs nothing extra — you pay only per-token. At 1K MAU that is ~$3–5/month total regardless.
 
 ### Vendor pricing — confirmed sources
 
@@ -69,9 +111,7 @@ Vercel's TOS defines commercial use as "any deployment used for the purpose of f
 - **Neon Launch:** $0.106/CU-hr, $0.35/GB-mo, no monthly minimum. `[3-0]`
 - **Upstash Redis PAYG:** $0.20/100K commands; first 1 GB storage free; 200 GB bandwidth free. `[3-0]` [Source](https://upstash.com/docs/redis/overall/pricing)
 - **Gemini 2.5 Flash-Lite:** $0.10/1M input tokens, $0.40/1M output tokens (standard tier). Batch/Flex: $0.05/$0.20. `[3-0]` [Source](https://ai.google.dev/gemini-api/docs/pricing)
-- **Gemini 2.5 Flash (standard):** $0.30/1M input, $2.50/1M output — output rate **includes thinking tokens**, so a reasoning-chain call costs 2–4× the headline rate. `[2-1]`
-
-> **Switch from Flash to Flash-Lite if not already done.** At 10K MAU, Flash costs ~$15–30/mo vs Flash-Lite's ~$2/mo. Flash-Lite has no reasoning mode and eliminates thinking-token billing risk.
+- **Gemini 2.5 Flash (standard, current model in code):** $0.30/1M input, $2.50/1M output — output rate **includes thinking tokens**, so a reasoning-chain call costs 2–4× the headline rate. Our calls do not use thinking mode, so effective output cost is lower; exact non-thinking rate: verify at source. `[2-1]`
 
 ---
 

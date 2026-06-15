@@ -14,7 +14,7 @@ Complete ordered checklist. Top = highest priority / blocking.
 1. **Vercel Pro upgrade** — vercel.com/account/billing. Hobby plan prohibits commercial use; Stripe payments make this mandatory ($20/mo)
 2. **Stripe setup** — stripe.com → Create account → 2 products ($3/mo, $25/yr) → 5 env vars in Vercel → register webhook. Full step-by-step in session 21 entry below. Also add `trial_period_days: 14` to checkout config (one line, 2–3× conversion uplift)
 3. **Reddit app** — reddit.com/prefs/apps → Create app → type: **script** → copy `client_id` + `client_secret`
-4. **5 Vercel env vars (growth automation)** — `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`, `REDDIT_PASSWORD`, `GROWTH_ADMIN_SECRET` = `4NzdyOODXl1BGsNLjfk4Gzs8ZX8Yg3jpIiy9xIpzfe8=`
+4. **5 Vercel env vars (growth automation)** — `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`, `REDDIT_PASSWORD`, `GROWTH_ADMIN_SECRET` = (value saved in your password manager — generate fresh with `openssl rand -base64 32`)
 5. **2 GitHub Actions secrets** — repo → Settings → Secrets: `APP_URL` = `https://busted-board.vercel.app` and `GROWTH_ADMIN_SECRET` = same value as above
 6. **Fix `DELETE /api/user` bug** — `subscriptions` and `communityLinks`/`communityLinkFlags` rows are not deleted on account deletion. Fix before any users sign up: cancel active Stripe sub via API, then delete those rows explicitly
 
@@ -47,6 +47,31 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 - **UK first** (~10–20 hrs engineering): Add BBC iPlayer/ITVX/All 4 TMDB provider IDs to `src/lib/platforms.ts`; parameterize `language` in `src/lib/tmdb.ts`; £40 ICO registration
 - **Before South Korea**: verify Watchmode API Korean coverage (`GET /sources/?regions=KR`) — if Wavve/TVING missing, core streaming-filter feature is broken
 - **Before Brazil**: check Globoplay Watchmode coverage (`GET /sources/?regions=BR`) — Amazon.com.br affiliate pays $0 on streaming, use Globoplay CPA instead
+
+---
+
+## 2026-06-14 (session 30 — Gemini quota analysis + BUSINESS.md corrections)
+
+### Done
+
+- **Gemini quota analysis** — audited all three production surfaces and quantified quota requirements by MAU tier.
+  - `buildMoreFeed` (pages 2+) skips Gemini entirely; only page-1 cache misses call `rankRecommendations`
+  - Per-call: ~4K tokens (3.5K input for 30 candidates + taste profile, ~500 output)
+  - Feed cache (12 hrs) is the primary quota shield — ~1 call/user/day for daily-active users
+  - Call volumes at 30% DAU/MAU: ~1K/mo (100 MAU), ~9K/mo (1K MAU), ~90K/mo (10K MAU)
+  - Free tier RPD (~500–1,500/day) is the first limit to hit, not RPM — move to paid before any marketing push
+  - At 1K MAU: ~$3–5/mo on Flash; ~$1/mo on Flash-Lite
+- **BUSINESS.md Section 2 corrected** — three errors fixed:
+  1. Model: tables listed "Flash-Lite" but code runs `gemini-2.5-flash` — corrected
+  2. Call volume: 300K/mo at 10K MAU assumed 100% DAU/MAU with no cache — corrected to ~90K with 30% DAU/MAU + upper-bound note
+  3. Dollar estimates: were Flash-Lite prices — recalculated for Flash
+  - Added "Gemini call volume assumptions" and "Gemini API quota tiers" subsections
+- **NEXT SESSION checklist updated** — added paid AI Studio key and Flash-Lite switch as pre-launch polish items
+
+### Next actions
+
+1. Get a paid Google AI Studio key (aistudio.google.com) — do before Reddit push
+2. Switch `"gemini-2.5-flash"` → `"gemini-2.5-flash-lite"` in [src/lib/gemini.ts](../src/lib/gemini.ts) and [src/lib/config/growth.ts](../src/lib/config/growth.ts)
 
 ---
 
