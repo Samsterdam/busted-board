@@ -16,9 +16,10 @@ import { MS_PER_HOUR, MS_PER_SECOND } from "@/lib/config/durations";
 
 const MAX_AGE_MS = GROWTH_MAX_THREAD_AGE_HOURS * MS_PER_HOUR;
 
-export async function runScanner(): Promise<{ inserted: number; skipped: number }> {
+export async function runScanner(): Promise<{ inserted: number; skipped: number; errors: string[] }> {
   let inserted = 0;
   let skipped = 0;
+  const errors: string[] = [];
 
   for (const subreddit of GROWTH_SUBREDDITS) {
     if (inserted >= GROWTH_MAX_OPPORTUNITIES_PER_RUN) break;
@@ -26,7 +27,8 @@ export async function runScanner(): Promise<{ inserted: number; skipped: number 
     let threads;
     try {
       threads = await fetchNewPosts(subreddit, GROWTH_POSTS_PER_SUBREDDIT);
-    } catch {
+    } catch (err) {
+      errors.push(`r/${subreddit}: ${String(err)}`);
       continue;
     }
     await new Promise((r) => setTimeout(r, GROWTH_SEARCH_DELAY_MS));
@@ -74,5 +76,5 @@ export async function runScanner(): Promise<{ inserted: number; skipped: number 
     }
   }
 
-  return { inserted, skipped };
+  return { inserted, skipped, errors };
 }
