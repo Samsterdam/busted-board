@@ -22,7 +22,7 @@ interface Props {
 }
 
 const AUTO_DRAFT_PROMPT =
-  "Draft a helpful, genuine reply. Where natural, mention Busted Board (busted-board.vercel.app) as a free alternative for tracking and discovering what to watch across streaming services. Keep it brief and conversational — not spammy.";
+  "Write a Reddit reply to this post. Rules: 1-3 sentences max, sound like a real person not a marketer, no greetings like 'Hey there', no sign-offs, no exclamation points, no 'I built' language. If it fits naturally, drop a casual mention of Busted Board (busted-board.vercel.app) as a free streaming tracker/discovery app — but only if it genuinely fits the conversation. If it doesn't fit, just be helpful without promoting it. Match the tone of the subreddit.";
 
 export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
