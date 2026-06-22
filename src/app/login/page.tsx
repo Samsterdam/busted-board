@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { signIn } from "@/auth";
+import { auth } from "@/auth";
 import { APP_URL } from "@/lib/config/app";
 
 export const metadata: Metadata = {
-  title: "Busted Board — Find Something Great to Watch",
-  description:
-    "Personalized movie and TV recommendations based on your taste, your platforms, and what you've actually seen.",
+  title: "Sign in — Busted Board",
+  description: "Sign in to get personalized movie and TV recommendations.",
   openGraph: {
-    title: "Busted Board",
+    title: "Sign in — Busted Board",
     description: "Personalized movie & TV picks for what you can actually watch.",
-    url: APP_URL,
+    url: `${APP_URL}/login`,
     siteName: "Busted Board",
     images: [{ url: `${APP_URL}/opengraph-image` }],
   },
@@ -30,46 +31,18 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  const session = await auth();
+  if (session?.user?.id) redirect("/");
+
   const { error } = await searchParams;
   const errorMessage = error
     ? (ERROR_MESSAGES[error] ?? "Something went wrong signing in. Please try again.")
     : null;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-10 py-12">
-      {/* Hero */}
-      <div className="text-center max-w-md">
-        <h1 className="text-5xl font-bold text-primary mb-4">Busted Board</h1>
-        <p className="text-muted-foreground text-base leading-relaxed">
-          Personalized movie and TV recommendations based on your actual taste —
-          filtered to what you can watch right now.
-        </p>
-      </div>
-
-      {/* Feature cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="font-semibold mb-2">Pick your platforms</p>
-          <p className="text-sm text-muted-foreground">
-            Only see movies and shows available on the services you actually subscribe to.
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="font-semibold mb-2">Rate what you know</p>
-          <p className="text-sm text-muted-foreground">
-            The more you rate, the smarter your feed gets. Skip what you haven&rsquo;t seen.
-          </p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="font-semibold mb-2">Get your feed</p>
-          <p className="text-sm text-muted-foreground">
-            A personalized lineup that updates as your taste evolves — not a popularity contest.
-          </p>
-        </div>
-      </div>
-
-      {/* Sign-in card */}
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-6 py-12">
       <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 space-y-4">
+        <p className="text-center font-semibold text-lg">Sign in to Busted Board</p>
         {errorMessage && (
           <p
             role="alert"
@@ -98,10 +71,6 @@ export default async function LoginPage({
           </button>
         </form>
       </div>
-
-      <p className="text-xs text-muted-foreground text-center max-w-xs">
-        Your taste profile and ratings are private to your account.
-      </p>
 
       <p className="text-xs text-muted-foreground text-center">
         By signing in you agree to our{" "}

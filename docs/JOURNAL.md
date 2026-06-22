@@ -5,7 +5,7 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
-## NEXT SESSION — START HERE (last updated 2026-06-22 session 33)
+## NEXT SESSION — START HERE (last updated 2026-06-22 session 34)
 
 Complete ordered checklist. Top = highest priority / blocking.
 
@@ -47,6 +47,35 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 - **UK first** (~10–20 hrs engineering): Add BBC iPlayer/ITVX/All 4 TMDB provider IDs to `src/lib/platforms.ts`; parameterize `language` in `src/lib/tmdb.ts`; £40 ICO registration
 - **Before South Korea**: verify Watchmode API Korean coverage (`GET /sources/?regions=KR`) — if Wavve/TVING missing, core streaming-filter feature is broken
 - **Before Brazil**: check Globoplay Watchmode coverage (`GET /sources/?regions=BR`) — Amazon.com.br affiliate pays $0 on streaming, use Globoplay CPA instead
+
+---
+
+## 2026-06-22 (session 34 — Landing page for logged-out visitors)
+
+### Done
+
+- **New `/` landing page** — logged-out visitors now see a real marketing page instead of being bounced to `/login`. Hero: "Stop scrolling. Start watching." + 3 feature cards + CTA → `/login` + secondary "Browse without an account →" link.
+- **Architecture**: root `src/app/page.tsx` checks auth server-side and branches — logged-out renders `<LandingPage />`, logged-in with platforms renders the feed (with `<BottomNav />` + `<PageShell>` explicit), no-platforms redirects to `/setup` or `/settings` (matching original two-condition logic).
+- **`src/app/(app)/page.tsx` deleted** — feed logic moved to root page.
+- **Login page simplified** — stripped to sign-in card only (no feature cards, no hero). Added logged-in redirect at the top so bookmarked `/login` links go straight to the feed.
+- **`src/proxy.ts` fixed** — the real Next.js middleware was only allowing `/login` and `/_next` as public routes. Added `/`, `/browse`, `/terms`, `/privacy`, `/top/*` to the public allowlist. Pre-existing bug: `/browse`, `/terms`, `/privacy` were previously only accessible because all test users were already logged in.
+
+### Next
+
+No new blockers. See pre-launch polish checklist above.
+
+---
+
+## 2026-06-22 (session 33c — BUSINESS.md doc sync)
+
+### Done
+
+- **BUSINESS.md updated** to reflect all session 31–33 changes: Gemini Flash-Lite as current model (cost tables revised down: ~$0.05/$0.50–1/$5–8 at 100/1K/10K MAU), Vercel Pro deferred during free-first beta, paid AI Studio key marked done ✓, Flash-Lite switch marked done ✓, Reddit outreach status column added to Section 10 CAC table, Summary priorities updated. Tier 3 total infra revised from ~$85–130 to ~$60–90/mo.
+- **MD060 linter warnings fixed** — all table separator rows reformatted from `|---|` to `| --- |` style across the file.
+
+### Next
+
+No new blockers. See session 33b checklist above.
 
 ---
 

@@ -64,7 +64,12 @@ export default auth(async (req) => {
   const { pathname } = req.nextUrl;
 
   const isPublic =
+    pathname === "/" ||
     pathname === "/login" ||
+    pathname === "/browse" ||
+    pathname === "/terms" ||
+    pathname === "/privacy" ||
+    pathname.startsWith("/top/") ||
     pathname.startsWith("/api/auth") ||
     pathname === "/manifest.json" ||
     pathname.startsWith("/_next") ||
