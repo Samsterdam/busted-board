@@ -21,6 +21,9 @@ interface Props {
   onClose: () => void;
 }
 
+const AUTO_DRAFT_PROMPT =
+  "Draft a helpful, genuine reply. Where natural, mention Busted Board (busted-board.vercel.app) as a free alternative for tracking and discovering what to watch across streaming services. Keep it brief and conversational — not spammy.";
+
 export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -28,12 +31,35 @@ export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const didAutoDraft = useRef(false);
 
   const lastDraft = messages.findLast((m) => m.role === "model")?.content ?? null;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (didAutoDraft.current) return;
+    didAutoDraft.current = true;
+    const initial: Message[] = [{ role: "user", content: AUTO_DRAFT_PROMPT }];
+    setMessages(initial);
+    setLoading(true);
+    fetch("/api/admin/growth/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ opportunityId: opp.id, messages: initial }),
+    })
+      .then((r) => r.json())
+      .then((data: { text?: string; error?: string }) => {
+        if (data.error) throw new Error(data.error);
+        setMessages([...initial, { role: "model", content: data.text ?? "" }]);
+      })
+      .catch((err: unknown) => {
+        setMessages([...initial, { role: "model", content: `Error: ${String(err)}` }]);
+      })
+      .finally(() => setLoading(false));
+  }, [opp.id]);
 
   async function sendMessage() {
     const text = input.trim();
@@ -86,11 +112,8 @@ export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props
   return (
     <div className="space-y-3 border-t border-zinc-800 pt-3">
       <div className="max-h-64 overflow-y-auto space-y-2 text-sm">
-        {messages.length === 0 && (
-          <p className="text-zinc-500 text-xs">
-            Tell Gemini what angle you want — e.g. &ldquo;mention the Trakt price doubling, keep it
-            casual&rdquo;
-          </p>
+        {loading && messages.length <= 1 && (
+          <p className="text-zinc-500 text-xs animate-pulse">Auto-drafting…</p>
         )}
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "text-zinc-300" : "text-white"}>
@@ -109,7 +132,7 @@ export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props
       <div className="flex gap-2">
         <input
           className="flex-1 text-sm bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
-          placeholder="Direction for Gemini…"
+          placeholder="Refine the draft…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
