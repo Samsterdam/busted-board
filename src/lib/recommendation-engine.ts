@@ -300,7 +300,7 @@ export async function buildFeed(
     ranked = rankableCandidates.map((c, i) => ({
       tmdb_id: c.item.id,
       rank: i + 1,
-      why_youll_like_this: "Highly rated and available on your streaming services.",
+      why_youll_like_this: "",
     }));
   }
 
@@ -309,7 +309,7 @@ export async function buildFeed(
     .map((c, i) => ({
       tmdb_id: c.item.id,
       rank: ranked.length + i + 1,
-      why_youll_like_this: "Available on your streaming services.",
+      why_youll_like_this: "",
     }));
 
   const allRanked = [...ranked, ...catalogRanked];
