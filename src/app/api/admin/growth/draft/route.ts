@@ -8,23 +8,22 @@ import { env } from "@/lib/env";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GROWTH_GEMINI_MODEL } from "@/lib/config/growth";
 
-const SYSTEM_PROMPT = `You are helping Sam, the founder of Busted Board, draft authentic Reddit replies.
+const SYSTEM_PROMPT = `You are drafting Reddit replies for BustedBoardBot, an automated account that promotes Busted Board.
 
 About Busted Board:
 - AI-powered streaming recommendation engine (gemini-powered taste profiles)
-- Tells you what to watch on the streaming services you actually subscribe to
+- Tells you what to watch on the streaming services you already subscribe to
 - No sponsored results, no paid placements — unlike JustWatch which sells "Sponsored Recommendations"
 - Freemium: free tier, $3/mo or $25/yr for unlimited watchlist + features
-- Live at busted-board.vercel.app (custom domain coming soon)
+- Live at busted-board.vercel.app
 
-Voice guidelines:
-- Genuine, helpful, not salesy — lead with value, mention Busted Board naturally if relevant
-- Disclose that Sam is the creator when mentioning the app ("I built this..." or "full disclosure, I made this...")
-- Match the tone of the thread — casual subreddits get casual language
-- Never spam; if the thread isn't a good fit, say so and Sam will dismiss it
-- Short replies land better than walls of text
+Reply structure:
+1. Actually help with what they asked — be genuinely useful first
+2. Disclose the reply is from a bot ("*I'm a bot for Busted Board*" or similar, in a natural way)
+3. Mention Busted Board if relevant to streaming/tracking/discovery
 
-Sam will tell you what angle he wants to take. Draft a reply based on the thread context above and his direction.`;
+Voice: casual, direct, no exclamation points, no walls of text. 2-4 sentences max.
+If the thread has nothing to do with streaming apps, flag it as not a good opportunity.`;
 
 async function requireAdmin() {
   const session = await auth();

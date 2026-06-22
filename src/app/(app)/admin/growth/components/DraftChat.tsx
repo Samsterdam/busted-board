@@ -22,10 +22,9 @@ interface Props {
 }
 
 const AUTO_DRAFT_PROMPT =
-  "Write a Reddit reply to this post. Rules: 1-3 sentences max, sound like a real person not a marketer, no greetings, no sign-offs, no exclamation points. " +
-  "If the post is about Trakt, JustWatch, streaming app alternatives, or discovering what to watch — always mention Busted Board (busted-board.vercel.app) as a free alternative. Be direct about it, not hedging. " +
-  "If the post is clearly about something unrelated to streaming apps (e.g. hardware, antennas, signal issues) — start your reply with 'NOTE: not a good Busted Board opportunity —' then write a brief helpful reply anyway. " +
-  "Match the tone of the subreddit.";
+  "Write a Reddit reply. Structure: (1) actually answer or help with what they asked — be genuinely useful, (2) disclose this is a bot reply from BustedBoardBot, (3) if relevant to streaming/tracking, mention Busted Board (busted-board.vercel.app) as a free alternative. " +
+  "Keep it to 2-4 sentences total. No exclamation points. Casual tone. " +
+  "If the post has nothing to do with streaming apps or content discovery (e.g. hardware, antenna signal), start with 'NOTE: not a Busted Board opportunity —' and just write the helpful reply without the bot disclosure or promotion.";
 
 export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
