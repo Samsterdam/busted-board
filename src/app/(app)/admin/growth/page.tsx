@@ -86,7 +86,10 @@ export default function GrowthPage() {
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-white">Growth Dashboard</h1>
+        <div>
+          <h1 className="text-xl font-semibold text-white">Growth Dashboard</h1>
+          <p className="text-[11px] text-zinc-600 tabular-nums">{process.env.NEXT_PUBLIC_BUILD_COMMIT} · {process.env.NEXT_PUBLIC_BUILD_DATE}</p>
+        </div>
         <div className="flex items-center gap-3">
           {scanResult && (
             <span className="text-xs text-zinc-400">{scanResult}</span>
