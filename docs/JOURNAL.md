@@ -5,7 +5,7 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
-## NEXT SESSION — START HERE (last updated 2026-06-22 session 34)
+## NEXT SESSION — START HERE (last updated 2026-06-22 session 34g)
 
 Complete ordered checklist. Top = highest priority / blocking.
 
@@ -24,7 +24,7 @@ Complete ordered checklist. Top = highest priority / blocking.
 - ~~**OG image**~~ — done ✓ AI-generated, 1200×630, committed to `public/og-default.png`, wired into layout.tsx OpenGraph + Twitter card metadata.
 - **Custom domain** — `bustedboard.com` (~$12/yr). Update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel
 - **Google Search Console** — add property, submit `/sitemap.xml`. Do after domain is live
-- **Sentry + PostHog** — `@sentry/nextjs` for errors + PostHog for product funnels/session replay. Install before any GTM push. 12 specific events to instrument — plan file missing; reconstruct from session 27 journal entry.
+- ~~**Sentry + PostHog**~~ — done ✓ Both installed (session 34). PostHog: 15 events instrumented across 8 components; activated by setting `NEXT_PUBLIC_POSTHOG_KEY` in Vercel. Sentry: wired via `instrumentation.ts` + `global-error.tsx`; activated by `SENTRY_DSN`.
 - ~~**Verify Reddit scan works**~~ — working ✓ via ScrapeCreators. Opportunities surfacing in Growth Dashboard.
 
 ### Marketing (phase 1 — 0→100 users)
@@ -47,6 +47,49 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 - **UK first** (~10–20 hrs engineering): Add BBC iPlayer/ITVX/All 4 TMDB provider IDs to `src/lib/platforms.ts`; parameterize `language` in `src/lib/tmdb.ts`; £40 ICO registration
 - **Before South Korea**: verify Watchmode API Korean coverage (`GET /sources/?regions=KR`) — if Wavve/TVING missing, core streaming-filter feature is broken
 - **Before Brazil**: check Globoplay Watchmode coverage (`GET /sources/?regions=BR`) — Amazon.com.br affiliate pays $0 on streaming, use Globoplay CPA instead
+
+---
+
+## 2026-06-22 (session 34g — journal close)
+
+### Done this session (34c–34g)
+
+- **Fixed missing movie descriptions** — real bug was generic stub strings (`"Available on your streaming services."`) set as `whyYoullLikeThis`, blocking TMDB overview from rendering. Fixed by setting stubs to `""` in `recommendation-engine.ts`. Also added dedicated `/api/admin/enrich-catalog` endpoint (60 rows/call, auto-loops) for the ~11 rows with null DB overviews.
+- **Sentry** — `@sentry/nextjs` installed; server init via `src/instrumentation.ts`; client crash capture via `src/app/global-error.tsx`; `next.config.ts` wrapped with `withSentryConfig`. Activated by `SENTRY_DSN` in Vercel.
+- **PostHog** — `posthog-js` installed; init via `src/instrumentation-client.ts` (Next.js 16 client instrumentation hook, no React provider needed); auto-pageview on route transition via `onRouterTransitionStart`; user identification via `AnalyticsIdentify` component in app layout. Activated by `NEXT_PUBLIC_POSTHOG_KEY` in Vercel.
+- **15 events** instrumented across 8 components, all names in `src/lib/config/analytics.ts` EVENTS constants: `feed_loaded`, `movie_detail_opened`, `movie_rated`, `watchlist_toggled`, `movie_dismissed`, `movie_watched`, `search_used`, `onboarding_complete`, `community_link_submitted`, `platform_suggestion_submitted`, `share_used`, `platform_changed`, `feed_reshuffled`, `mood_filter_applied`, `import_completed`, `upgrade_prompt_viewed`, `upgrade_cta_clicked`, `sign_out`.
+- All analytics + Sentry are **no-ops when env vars are absent** — CI and local dev unaffected.
+- Everything committed and pushed ✓
+
+### To activate (both free tiers)
+
+- **PostHog**: posthog.com → create project → Project Settings → API Keys → `NEXT_PUBLIC_POSTHOG_KEY` in Vercel
+- **Sentry**: sentry.io → create Next.js project → Settings → Client Keys (DSN) → `SENTRY_DSN` in Vercel
+
+### Next
+
+- Custom domain (`bustedboard.com`) + Google Search Console
+- Stripe setup when ready for monetization
+- r/trakt post — fastest acquisition path
+
+---
+
+## 2026-06-22 (session 34e — Analytics instrumentation cleanup + remaining events)
+
+### Done
+
+- Fixed broken `layout.tsx` import referencing deleted `PostHogProvider.tsx` — reverted to clean version using `instrumentation-client.ts` for PostHog init (page views handled automatically).
+- Instrumented 4 remaining components not covered by prior session's analytics commit:
+  - `SubscriptionSection` — `upgrade_prompt_viewed` (on mount when free), `upgrade_cta_clicked` (on button click)
+  - `TraktImportSection` — `import_completed` after successful import
+  - `LetterboxdImportSection` — same
+  - `SurpriseView` — `feed_reshuffled`, `mood_filter_applied`
+- Added `FEED_RESHUFFLED`, `MOOD_FILTER_APPLIED`, `IMPORT_COMPLETED`, `UPGRADE_PROMPT_VIEWED`, `UPGRADE_CTA_CLICKED`, `SIGN_OUT`, `PLATFORM_CHANGED` to `src/lib/config/analytics.ts` EVENTS constants.
+- Updated `.env.example` with `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST`.
+
+### To activate PostHog
+
+Set `NEXT_PUBLIC_POSTHOG_KEY` in Vercel env vars (get from posthog.com → Project Settings → API Keys). No deploy config changes needed.
 
 ---
 
