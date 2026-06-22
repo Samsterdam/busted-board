@@ -88,7 +88,7 @@ export default function GrowthPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-white">Growth Dashboard</h1>
-          <p className="text-[11px] text-zinc-600 tabular-nums">{process.env.NEXT_PUBLIC_BUILD_COMMIT} · {new Date(process.env.NEXT_PUBLIC_BUILD_DATE ?? "").toLocaleString()}</p>
+          <p className="text-[11px] text-zinc-600 tabular-nums">Build #{process.env.NEXT_PUBLIC_BUILD_NUMBER} · {new Date(process.env.NEXT_PUBLIC_BUILD_DATE ?? "").toLocaleString()}</p>
         </div>
         <div className="flex items-center gap-3">
           {scanResult && (
