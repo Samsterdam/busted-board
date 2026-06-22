@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 import { parseLetterboxdRatings } from "@/lib/letterboxd-import";
 
 interface ImportResult {
@@ -61,6 +63,7 @@ export function LetterboxdImportSection() {
       setResult(data);
       const total = data.ratingsImported + data.watchlistImported;
       if (total > 0) {
+        posthog.capture(EVENTS.IMPORT_COMPLETED, { source: "letterboxd", ratingsImported: data.ratingsImported, watchlistImported: data.watchlistImported });
         toast.success(`Imported ${total} item${total === 1 ? "" : "s"} from Letterboxd`);
       } else {
         toast.info("Nothing new to import — titles may not be in your streaming catalog yet.");

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Shuffle } from "lucide-react";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/PageShell";
 import { RecommendationCard } from "@/components/feed/RecommendationCard";
@@ -57,6 +59,7 @@ export function SurpriseView() {
   }, []);
 
   async function reshuffle() {
+    posthog.capture(EVENTS.FEED_RESHUFFLED);
     const nextOffset = offset + CARDS_PER_VIEW;
     if (nextOffset < pool.length) {
       setOffset(nextOffset);
@@ -67,6 +70,7 @@ export function SurpriseView() {
   }
 
   async function handleMoodSelect(selected: Mood) {
+    posthog.capture(EVENTS.MOOD_FILTER_APPLIED, { mood: selected });
     setMood(selected);
     setReshuffleCount(0);
     await fetchPool(selected);

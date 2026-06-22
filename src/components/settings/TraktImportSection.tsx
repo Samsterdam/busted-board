@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 
 interface ImportResult {
   ratingsImported: number;
@@ -58,6 +60,7 @@ export function TraktImportSection() {
 
       const total = data.ratingsImported + data.watchlistImported;
       if (total > 0) {
+        posthog.capture(EVENTS.IMPORT_COMPLETED, { source: "trakt", ratingsImported: data.ratingsImported, watchlistImported: data.watchlistImported });
         toast.success(`Imported ${total} item${total === 1 ? "" : "s"} from Trakt!`);
       } else {
         toast.info("Nothing new to import — all items already exist.");

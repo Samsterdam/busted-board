@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { WATCHLIST_FREE_LIMIT } from "@/lib/config/stripe";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 
 interface SubscriptionStatus {
   status: "free" | "active" | "canceled" | "past_due";
@@ -25,6 +27,7 @@ export function SubscriptionSection() {
   }, []);
 
   async function handleUpgrade(billingCycle: "monthly" | "annual") {
+    posthog.capture(EVENTS.UPGRADE_CTA_CLICKED, { billingCycle });
     setUpgrading(true);
     try {
       const res = await fetch("/api/billing/checkout", {
@@ -53,6 +56,14 @@ export function SubscriptionSection() {
   const isActive = sub?.status === "active";
   const isPastDue = sub?.status === "past_due";
   const stripeEnabled = sub?.stripeEnabled !== false;
+
+  const didTrackUpgradeView = useRef(false);
+  useEffect(() => {
+    if (!loading && isFree && stripeEnabled && !didTrackUpgradeView.current) {
+      didTrackUpgradeView.current = true;
+      posthog.capture(EVENTS.UPGRADE_PROMPT_VIEWED);
+    }
+  }, [loading, isFree, stripeEnabled]);
 
   const periodEndLabel = sub?.currentPeriodEnd
     ? new Date(sub.currentPeriodEnd).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
