@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { MS_PER_SECOND } from "@/lib/config/durations";
+
+const COPY_FEEDBACK_MS = 2 * MS_PER_SECOND;
 
 interface Opportunity {
   id: number;
@@ -17,7 +20,7 @@ interface Message {
 
 interface Props {
   opportunity: Opportunity;
-  onPosted: () => void;
+  onPosted?: () => void;
   onClose: () => void;
 }
 
@@ -26,12 +29,11 @@ const AUTO_DRAFT_PROMPT =
   "2-4 sentences total. No exclamation points. Casual tone. " +
   "If the post is about hardware/antennas/signal (not streaming apps), start with 'NOTE: not a Busted Board opportunity —' and skip the bot disclosure and promotion.";
 
-export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props) {
+export default function DraftChat({ opportunity: opp, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [posting, setPosting] = useState(false);
-  const [postError, setPostError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const didAutoDraft = useRef(false);
 
@@ -91,25 +93,6 @@ export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props
     }
   }
 
-  async function postToReddit() {
-    if (!lastDraft) return;
-    setPosting(true);
-    setPostError(null);
-    try {
-      const res = await fetch("/api/admin/growth/post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ opportunityId: opp.id, text: lastDraft }),
-      });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (data.error) throw new Error(data.error);
-      onPosted();
-    } catch (err) {
-      setPostError(String(err));
-    } finally {
-      setPosting(false);
-    }
-  }
 
   return (
     <div className="space-y-3 border-t border-zinc-800 pt-3">
@@ -150,21 +133,32 @@ export default function DraftChat({ opportunity: opp, onPosted, onClose }: Props
       </div>
 
       {lastDraft && (
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
           <button
-            onClick={postToReddit}
-            disabled={posting}
-            className="text-xs px-3 py-1.5 rounded bg-green-700 hover:bg-green-600 text-white font-medium disabled:opacity-40"
+            onClick={() => {
+              navigator.clipboard.writeText(lastDraft).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
+              }).catch(() => null);
+            }}
+            className="text-xs px-3 py-1.5 rounded bg-green-700 hover:bg-green-600 text-white font-medium"
           >
-            {posting ? "Posting…" : "Post to Reddit"}
+            {copied ? "Copied!" : "Copy draft"}
           </button>
+          <a
+            href={opp.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs px-3 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 text-white"
+          >
+            Open thread
+          </a>
           <button
             onClick={onClose}
             className="text-xs px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
           >
-            Cancel
+            Dismiss
           </button>
-          {postError && <span className="text-xs text-red-400">{postError}</span>}
         </div>
       )}
     </div>

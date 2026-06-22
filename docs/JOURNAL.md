@@ -50,6 +50,20 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 
 ---
 
+## 2026-06-22 (session 33b — Expand Reddit scanner subreddit + keyword pool)
+
+### Done
+
+- **Widened scanner pool** — added 6 subreddits (movies, tvshows, Letterboxd, MovieSuggestions, NetflixBestOf, mubi) and 9 keywords (watchlist app, watch/show/movie tracker, track my shows, track what i watch, letterboxd + letterboxd alternative, movie/tv/show recommendation). Was 6 subreddits / 14 keywords; now 12 / 23.
+- Root cause of sparse results: 48-hour age window + narrow keywords meant only 3 posts surfaced per scan. Wider pool should fill the Pending tab reliably.
+
+### Next
+
+- Scan Reddit and verify pending tab fills up with more results
+- Consider bumping `GROWTH_MAX_THREAD_AGE_HOURS` if 12 subreddits still return few matches
+
+---
+
 ## 2026-06-22 (session 33 — Add PBS, ViX, Xumo Play to free platform registry)
 
 ### Done
