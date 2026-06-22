@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { PlatformPicker } from "@/components/onboarding/PlatformPicker";
 import { toast } from "sonner";
 import { APP_URL, APP_SHARE_TEXT } from "@/lib/config/app";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 import { AdminSection } from "@/components/settings/AdminSection";
 import { DangerZoneSection } from "@/components/settings/DangerZoneSection";
 import { TraktImportSection } from "@/components/settings/TraktImportSection";
@@ -76,6 +78,7 @@ export default function SettingsPage() {
 
   async function handleShare() {
     try {
+      posthog.capture(EVENTS.SHARE_USED, { method: navigator.share ? "native" : "clipboard" });
       if (navigator.share) {
         await navigator.share({ title: "Busted Board", text: APP_SHARE_TEXT, url: APP_URL });
       } else {

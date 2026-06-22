@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { PlatformPicker } from "./PlatformPicker";
 import { InitialRatings } from "./InitialRatings";
 import { VibePicker } from "./VibePicker";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 
 const STEPS = ["Platforms", "Rate a Few", "Your Vibe"] as const;
 
@@ -36,6 +38,7 @@ export function SetupWizard() {
     } else if (step === 1) {
       setStep(2);
     } else {
+      posthog.capture(EVENTS.ONBOARDING_COMPLETE, { platform_count: selectedPlatforms.length });
       router.push("/");
       router.refresh();
     }

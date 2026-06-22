@@ -10,6 +10,8 @@ import {
   SUGGESTION_NOTES_MAX_LENGTH,
   SUGGESTION_URL_MAX_LENGTH,
 } from "@/lib/config/suggestions";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 
 interface Props {
   onSubmitted: () => void;
@@ -46,6 +48,7 @@ export function SuggestPlatformForm({ onSubmitted, onCancel }: Props) {
         return;
       }
       toast.success("Thanks! We'll review your suggestion.");
+      posthog.capture(EVENTS.PLATFORM_SUGGESTION_SUBMITTED, { name: name.trim() });
       onSubmitted();
     } catch {
       toast.error("Could not submit suggestion.");

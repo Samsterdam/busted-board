@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { RefreshCw, Gem, LayoutGrid, Grid2x2, Rows3, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { slotHasActiveProvider } from "@/lib/ads/registry";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { MIN_RATINGS_FOR_PROFILE, RATING_MAX, RATING_SOURCE_QUICK } from "@/lib/config/ratings";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 import { useFeedPagination } from "./hooks/useFeedPagination";
 import { toFeedItem, GridSkeleton, EmptyState } from "./FeedStates";
 import { ResultsSection } from "./ResultsSection";
@@ -57,9 +59,11 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
       });
       const data = await res.json();
       if (data.error) { toast.error(data.error); return; }
-      setSearchResults((data.results ?? []).map(toFeedItem));
+      const results = (data.results ?? []).map(toFeedItem);
+      setSearchResults(results);
       setSimilarResults((data.similar ?? []).map(toFeedItem));
       setSearchExplanation(data.explanation ?? null);
+      posthog.capture(EVENTS.SEARCH_USED, { query: q, results_count: results.length });
     } catch {
       toast.error("Search failed. Please try again.");
     } finally {
@@ -110,6 +114,14 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   const { loadingMore, hasMore, needsRatings, staleWarning, sentinelRef, loadFeed } =
     useFeedPagination({ feed, setFeed, setLoading, setRefreshing });
 
+  const didTrackFeedView = useRef(false);
+  useEffect(() => {
+    if (!loading && feed.length > 0 && !didTrackFeedView.current) {
+      didTrackFeedView.current = true;
+      posthog.capture(EVENTS.FEED_LOADED, { title_count: feed.length });
+    }
+  }, [loading, feed.length]);
+
   // Load user ratings for the feed items
   useEffect(() => {
     if (feed.length === 0) return;
@@ -126,6 +138,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
   async function handleDismiss(item: FeedItem) {
+    posthog.capture(EVENTS.MOVIE_DISMISSED, { tmdbId: item.tmdbId, title: item.title });
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
     setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     await fetch("/api/feed/dismiss", {
@@ -177,6 +190,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   }
 
   async function handleWatched(item: FeedItem) {
+    posthog.capture(EVENTS.MOVIE_WATCHED, { tmdbId: item.tmdbId, title: item.title });
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
     setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     setWatchedIds((prev) => new Set([...prev, item.tmdbId]));

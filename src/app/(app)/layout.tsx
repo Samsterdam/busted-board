@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/layout/BottomNav";
+import { AnalyticsIdentify } from "@/components/AnalyticsIdentify";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -24,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <>
+      <AnalyticsIdentify userId={userId} />
       {children}
       <BottomNav />
     </>

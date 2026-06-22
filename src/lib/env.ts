@@ -34,4 +34,6 @@ export const env = {
   SCRAPECREATORS_API_KEY: process.env.SCRAPECREATORS_API_KEY,
   /** Optional — Bearer token for the /api/admin/growth/scan cron endpoint. */
   GROWTH_ADMIN_SECRET: process.env.GROWTH_ADMIN_SECRET,
+  /** Optional — Sentry DSN for error tracking. No-op when unset. */
+  SENTRY_DSN: process.env.SENTRY_DSN,
 } as const;

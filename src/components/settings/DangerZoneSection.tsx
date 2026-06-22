@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 
 export function DangerZoneSection() {
+  const [expanded, setExpanded] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
@@ -31,11 +33,18 @@ export function DangerZoneSection() {
   }
 
   return (
-    <section aria-labelledby="danger-heading">
-      <h2 id="danger-heading" className="text-sm font-medium text-destructive uppercase tracking-wider mb-3">
+    <section aria-label="Danger Zone">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls="danger-panel"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between text-sm font-medium text-destructive uppercase tracking-wider mb-3 focus-visible:outline-2 focus-visible:outline-primary"
+      >
         Danger Zone
-      </h2>
-      <div className="rounded-xl border border-destructive/30 bg-card p-4">
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+      </button>
+      {expanded && <div id="danger-panel" className="rounded-xl border border-destructive/30 bg-card p-4">
         <p className="text-sm font-medium mb-1">Delete my account</p>
         <p className="text-xs text-muted-foreground mb-3">
           Permanently removes your account, ratings, watchlist, and all data. This cannot be undone.
@@ -67,7 +76,7 @@ export function DangerZoneSection() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </div>}
     </section>
   );
 }

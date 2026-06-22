@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdScripts } from "@/components/ads/AdScripts";
 import { ConsentBanner } from "@/components/ads/ConsentBanner";
+import { PostHogProvider, PostHogPageView } from "@/components/analytics/PostHogProvider";
 
 const geist = Geist({ variable: "--font-sans", subsets: ["latin"] });
 
@@ -42,10 +44,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={geist.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster theme="dark" position="top-center" />
-        <ConsentBanner />
-        <AdScripts />
+        <PostHogProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster theme="dark" position="top-center" />
+          <Suspense fallback={null}><PostHogPageView /></Suspense>
+          <ConsentBanner />
+          <AdScripts />
+        </PostHogProvider>
       </body>
     </html>
   );

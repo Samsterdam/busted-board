@@ -13,6 +13,8 @@ import { SuggestPlatformForm } from "@/components/SuggestPlatformForm";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { toast } from "sonner";
 import { getWatchUrl } from "@/lib/config/affiliates";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 
 interface CommunityLink {
   id: number;
@@ -38,6 +40,10 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
   const [communityLinks, setCommunityLinks] = useState<CommunityLink[] | null>(null);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [showSuggestPlatform, setShowSuggestPlatform] = useState(false);
+
+  useEffect(() => {
+    posthog.capture(EVENTS.MOVIE_DETAIL_OPENED, { tmdbId: item.tmdbId, title: item.title, cinemaScore: item.cinemaScore });
+  }, [item.tmdbId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetch(`/api/community-links?tmdbId=${item.tmdbId}&tmdbType=${item.tmdbType}`)
@@ -99,6 +105,7 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
   function handleStarChange(rating: number) {
     setCurrentRating(rating);
     saveRating(rating);
+    posthog.capture(EVENTS.MOVIE_RATED, { tmdbId: item.tmdbId, title: item.title, rating });
   }
 
   function handleNotesBlur() {
@@ -298,7 +305,10 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
             <Button
               variant="outline"
               size="sm"
-              onClick={onWatchlist}
+              onClick={() => {
+                posthog.capture(EVENTS.WATCHLIST_TOGGLED, { tmdbId: item.tmdbId, title: item.title, action: inWatchlist ? "removed" : "added" });
+                onWatchlist();
+              }}
               className="flex-1 border-border"
               aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
             >

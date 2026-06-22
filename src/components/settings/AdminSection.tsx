@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { MS_PER_DAY, MS_PER_HOUR } from "@/lib/config/durations";
@@ -19,12 +20,14 @@ const HOURS_PER_DAY = MS_PER_DAY / MS_PER_HOUR;
 const PERCENT_FULL = 100;
 
 export function AdminSection() {
+  const [expanded, setExpanded] = useState(false);
   const [syncing, setSyncing] = useState<SyncType | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [enriching, setEnriching] = useState(false);
   const [enrichResult, setEnrichResult] = useState<string | null>(null);
+  const hasLoaded = useRef(false);
 
   function loadSyncStatus() {
     const capturedNow = Date.now();
@@ -34,7 +37,12 @@ export function AdminSection() {
       .catch(() => null);
   }
 
-  useEffect(() => { loadSyncStatus(); }, []);
+  useEffect(() => {
+    if (expanded && !hasLoaded.current) {
+      hasLoaded.current = true;
+      loadSyncStatus();
+    }
+  }, [expanded]);
 
   // Aggregate per-platform log entries into a single summary for each media type.
   function getTypeStats(type: SyncType): { syncedAt: string; itemCount: number; callsUsed: number } | null {
@@ -117,11 +125,18 @@ export function AdminSection() {
   }, []);
 
   return (
-    <section aria-labelledby="admin-heading">
-      <h2 id="admin-heading" className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+    <section aria-label="Admin">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls="admin-panel"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 focus-visible:outline-2 focus-visible:outline-primary"
+      >
         Admin
-      </h2>
-      <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+      </button>
+      {expanded && <div id="admin-panel" className="rounded-xl border border-border bg-card p-4 space-y-4">
         <Link
           href="/admin/growth"
           className="flex items-center justify-between rounded-lg border border-border/50 p-3 text-sm font-medium hover:bg-muted/50 transition-colors"
@@ -195,7 +210,7 @@ export function AdminSection() {
           </Button>
           {enrichResult && <p className="text-[11px] text-green-400">{enrichResult}</p>}
         </div>
-      </div>
+      </div>}
     </section>
   );
 }

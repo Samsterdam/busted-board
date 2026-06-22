@@ -6,6 +6,8 @@ const HTTP_TOO_MANY_REQUESTS = 429;
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { LINK_LABEL_MAX_LENGTH, LINK_URL_MAX_LENGTH } from "@/lib/config/community";
+import posthog from "posthog-js";
+import { EVENTS } from "@/lib/config/analytics";
 
 type FormState =
   | "idle"
@@ -65,6 +67,7 @@ export function CommunityLinkSubmitForm({ tmdbId, tmdbType, mediaTitle, onSubmit
         return;
       }
       toast.success(data.created ? "Link added!" : "Link already exists.");
+      posthog.capture(EVENTS.COMMUNITY_LINK_SUBMITTED, { tmdbId, tmdbType });
       onSubmitted();
     } catch {
       toast.error("Could not submit link.");
