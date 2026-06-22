@@ -80,26 +80,16 @@ export interface RedditThread {
   created_utc: number;
 }
 
-export async function searchSubreddit(
+export async function fetchNewPosts(
   subreddit: string,
-  query: string,
   limit: number
 ): Promise<RedditThread[]> {
-  const params = new URLSearchParams({
-    q: query,
-    restrict_sr: "true",
-    sort: "new",
-    limit: String(limit),
-    t: "week",
-  });
-
-  // Use the unauthenticated public API — no OAuth app required for reads.
-  const res = await fetch(`${REDDIT_PUBLIC_BASE}/r/${subreddit}/search.json?${params}`, {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await fetch(`${REDDIT_PUBLIC_BASE}/r/${subreddit}/new.json?${params}`, {
     headers: { "User-Agent": USER_AGENT },
   });
-  if (!res.ok) throw new Error(`Reddit search error ${res.status} for r/${subreddit}`);
+  if (!res.ok) throw new Error(`Reddit listing error ${res.status} for r/${subreddit}`);
   const data = (await res.json()) as { data: { children: { data: RedditThread }[] } };
-
   return data.data.children.map((c) => c.data);
 }
 

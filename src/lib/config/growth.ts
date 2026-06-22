@@ -30,8 +30,8 @@ export const GROWTH_MAX_OPPORTUNITIES_PER_RUN = 50;
 /** Only surface threads posted within this many hours. */
 export const GROWTH_MAX_THREAD_AGE_HOURS = 48;
 
-/** Max results per subreddit×keyword search call. */
-export const GROWTH_SEARCH_LIMIT = 5;
+/** Max new posts to fetch per subreddit per scan run. */
+export const GROWTH_POSTS_PER_SUBREDDIT = 25;
 
 /** Max characters of a Reddit post body to persist (keeps rows lean). */
 export const GROWTH_MAX_BODY_LENGTH = 2000;
