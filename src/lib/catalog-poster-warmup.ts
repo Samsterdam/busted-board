@@ -8,10 +8,13 @@ const ENRICH_BATCH_SIZE = 20;
 /**
  * Fetch TMDB data for every catalog row missing a poster or overview.
  * Called at the end of each admin catalog sync. Idempotent — skips rows
- * that already have both fields. Returns the number of rows updated.
+ * that already have both fields.
+ *
+ * Pass `limit` to process only N rows per call (safe for short function timeouts).
+ * Returns `{ enriched, remaining }` so callers know whether more rows are left.
  */
-export async function enrichCatalogData(): Promise<number> {
-  const rows = await db
+export async function enrichCatalogData(limit?: number): Promise<{ enriched: number; remaining: number }> {
+  const allRows = await db
     .select({ id: media.id, tmdbId: media.tmdbId, tmdbType: media.tmdbType })
     .from(media)
     .where(
@@ -22,7 +25,9 @@ export async function enrichCatalogData(): Promise<number> {
       ),
     );
 
-  let updated = 0;
+  const rows = limit !== undefined ? allRows.slice(0, limit) : allRows;
+  const remaining = Math.max(0, allRows.length - rows.length);
+  let enriched = 0;
 
   for (let i = 0; i < rows.length; i += ENRICH_BATCH_SIZE) {
     const batch = rows.slice(i, i + ENRICH_BATCH_SIZE);
@@ -44,8 +49,8 @@ export async function enrichCatalogData(): Promise<number> {
         }
       }),
     );
-    updated += counts.reduce((a, b) => a + b, 0);
+    enriched += counts.reduce((a, b) => a + b, 0);
   }
 
-  return updated;
+  return { enriched, remaining };
 }

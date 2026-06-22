@@ -21,6 +21,7 @@ import {
   CATALOG_SYNC_COOLDOWN_MS,
   CATALOG_MOTN_SAFE_BUDGET,
   MOTN_PAGE_SIZE,
+  CATALOG_ENRICH_ROWS_PER_SYNC,
 } from "@/lib/config/catalog";
 
 type MediaType = "movie" | "tv";
@@ -330,7 +331,8 @@ export async function POST(request: Request) {
   await db.delete(feedCache);
 
   // Fetch TMDB data (poster + overview) for any catalog rows that still lack either.
-  const catalogEnriched = await enrichCatalogData();
+  // Limit to 40 rows per sync call so we stay well within the 10s Vercel function timeout.
+  const { enriched: catalogEnriched } = await enrichCatalogData(CATALOG_ENRICH_ROWS_PER_SYNC);
 
   const totalSynced = Object.values(results).reduce((s, r) => s + r.count, 0);
   const errors = Object.entries(results)

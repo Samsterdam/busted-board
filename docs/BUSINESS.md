@@ -1,6 +1,6 @@
 # Busted Board — Business Feasibility Analysis
 
-**Last updated: 2026-06-14. Verified claims sourced from 28 primary/secondary sources via 111-agent deep research pass. Claims marked `[3-0]` were unanimously confirmed; `[2-1]` passed with one dissent; `[est]` are estimates not confirmed in this research run.**
+**Last updated: 2026-06-22. Verified claims sourced from 28 primary/secondary sources via 111-agent deep research pass. Claims marked `[3-0]` were unanimously confirmed; `[2-1]` passed with one dissent; `[est]` are estimates not confirmed in this research run.**
 
 ---
 
@@ -9,7 +9,7 @@
 ### Recommendation: Home-state LLC first, defer Delaware
 
 | Entity | Year 1 Cost | Ongoing/yr | When to Use |
-|--------|------------|-----------|-------------|
+| -------- | ------------ | ----------- | ------------- |
 | Sole proprietor | $0 | $0 | Pre-revenue only. No liability shield, hard to open business bank account. |
 | **Home-state LLC** | **$130–200** | **$25–50** | **Recommended now.** Cheapest path with liability protection + business bank account. |
 | Delaware LLC | ~$440–540 | $350–450 | Only if out-of-state investors are in the picture. Adds registered agent ($50–150/yr) + $300/yr franchise tax for no benefit at this stage. |
@@ -30,40 +30,40 @@
 
 Vercel's TOS defines commercial use as "any deployment used for the purpose of financial gain." Busted Board has Stripe subscriptions → **Vercel Pro ($20/mo) is required from day one.** `[3-0]`
 
+> **2026-06-22 update:** Launch is free-first (beta) with Stripe deferred. During beta with no payment processing, the Hobby plan is used and the $20/mo Vercel line is $0. Pro becomes mandatory the moment Stripe goes live. All tier tables below show the steady-state cost once monetization is enabled.
+
 ### Tier 1: 100 MAU (Launch)
 
 | Service | Plan | Monthly Cost |
-|---------|------|-------------|
-| Vercel | Pro (required) | $20.00 |
+| --------- | ------ | ------------- |
+| Vercel | Pro (required; Hobby during beta) | $20.00 |
 | Neon PostgreSQL | Free (0.5 GB, 100 CU-hr/mo) | $0 |
 | Upstash Redis | PAYG (~500K cmds/mo) | ~$1.00 |
-| Gemini 2.5 Flash *(current)* | ~1,000 calls × 4K tok avg | ~$0.30 |
+| Gemini 2.5 Flash-Lite *(current — switched session 31)* | ~1,000 calls × 4K tok avg | ~$0.05 |
 | TMDB API | Free tier | $0 |
-| **Total infra** | | **~$21/mo** |
+| **Total infra** | | **~$21/mo** *(~$1/mo during beta without Vercel Pro)* |
 
 ### Tier 2: 1,000 MAU
 
 | Service | Plan | Monthly Cost |
-|---------|------|-------------|
+| --------- | ------ | ------------- |
 | Vercel | Pro | $20.00 |
 | Neon | Launch ($0.106/CU-hr + $0.35/GB-mo) | ~$5 |
 | Upstash Redis | ~1M commands/mo | ~$2 |
-| Gemini 2.5 Flash *(current)* | ~9,000 calls/mo | ~$3–5 |
+| Gemini 2.5 Flash-Lite *(current — switched session 31)* | ~9,000 calls/mo | ~$0.50–1 |
 | TMDB API | Free | $0 |
-| **Total infra** | | **~$30/mo** |
+| **Total infra** | | **~$28/mo** |
 
 ### Tier 3: 10,000 MAU
 
 | Service | Plan | Monthly Cost |
-|---------|------|-------------|
+| --------- | ------ | ------------- |
 | Vercel | Pro (may hit overage) | ~$20–40 |
 | Neon | Launch | ~$15–20 |
 | Upstash Redis | ~10M commands/mo | ~$20 |
-| Gemini 2.5 Flash *(current)* | ~90K calls/mo | ~$30–50 |
+| Gemini 2.5 Flash-Lite *(current — switched session 31)* | ~90K calls/mo | ~$5–8 |
 | TMDB API | Free | $0 |
-| **Total infra** | | **~$85–130/mo** |
-
-> **Switch from Flash to Flash-Lite to cut Gemini costs ~5–10×.** At 10K MAU Flash-Lite drops the Gemini line from ~$30–50/mo to ~$5–8/mo. See action item in Summary.
+| **Total infra** | | **~$60–90/mo** |
 
 ### Gemini call volume assumptions
 
@@ -78,7 +78,7 @@ Vercel's TOS defines commercial use as "any deployment used for the purpose of f
 **DAU/MAU assumption: 30%.** Call volumes use 30% DAU/MAU. The 12-hour feed cache means each daily user generates at most 1 Gemini call/day. Upper-bound scenario (100% DAU/MAU, every user visits every 12 hours exactly): multiply by 3.3×.
 
 | MAU | DAU (30%) | Calls/day | Calls/month |
-|-----|-----------|-----------|-------------|
+| ----- | ----------- | ----------- | ------------- |
 | 100 | 30 | ~33 | ~1,000 |
 | 1,000 | 300 | ~330 | ~9,000 |
 | 10,000 | 3,000 | ~3,300 | ~90,000 |
@@ -88,7 +88,7 @@ Vercel's TOS defines commercial use as "any deployment used for the purpose of f
 **Gemini 2.5 Flash free tier** has three relevant limits (verify current values at [ai.google.dev/gemini-api/docs/rate-limits](https://ai.google.dev/gemini-api/docs/rate-limits)):
 
 | Limit | Free | Paid |
-|-------|------|------|
+| ------- | ------ | ------ |
 | RPM | 15 | 2,000 |
 | TPM | 1M | 4M |
 | RPD | ~500–1,500 | none |
@@ -96,14 +96,14 @@ Vercel's TOS defines commercial use as "any deployment used for the purpose of f
 **RPD is the first constraint to hit**, not RPM — at normal traffic distribution, burst RPM stays comfortably under 15 until ~5K+ MAU.
 
 | MAU | Calls/day | Free RPD OK? | Free RPM OK? |
-|-----|-----------|-------------|-------------|
+| ----- | ----------- | ------------- | ------------- |
 | 100 | ~33 | ✓ | ✓ |
 | 500 | ~165 | ✓ (borderline if RPD=500) | ✓ |
 | 1,000 | ~330 | **Watch closely** | ✓ |
 | 2,000 | ~660 | ✗ | ✓ |
 | 10,000 | ~3,300 | ✗ | **Needs paid** |
 
-**Action: move to a paid Google AI Studio API key before any marketing push** (before first Reddit post or Product Hunt). Paid tier eliminates RPD, raises RPM to 2,000, and costs nothing extra — you pay only per-token. At 1K MAU that is ~$3–5/month total regardless.
+~~**Action: move to a paid Google AI Studio API key before any marketing push**~~ **Done ✓ (2026-06-22, session 33)** — Paid 1 tier activated, $25 credit loaded. Paid tier eliminates RPD, raises RPM to 2,000, and costs nothing extra — you pay only per-token. At 1K MAU that is ~$0.50–1/month on Flash-Lite.
 
 ### Vendor pricing — confirmed sources
 
@@ -111,7 +111,7 @@ Vercel's TOS defines commercial use as "any deployment used for the purpose of f
 - **Neon Launch:** $0.106/CU-hr, $0.35/GB-mo, no monthly minimum. `[3-0]`
 - **Upstash Redis PAYG:** $0.20/100K commands; first 1 GB storage free; 200 GB bandwidth free. `[3-0]` [Source](https://upstash.com/docs/redis/overall/pricing)
 - **Gemini 2.5 Flash-Lite:** $0.10/1M input tokens, $0.40/1M output tokens (standard tier). Batch/Flex: $0.05/$0.20. `[3-0]` [Source](https://ai.google.dev/gemini-api/docs/pricing)
-- **Gemini 2.5 Flash (standard, current model in code):** $0.30/1M input, $2.50/1M output — output rate **includes thinking tokens**, so a reasoning-chain call costs 2–4× the headline rate. Our calls do not use thinking mode, so effective output cost is lower; exact non-thinking rate: verify at source. `[2-1]`
+- **Gemini 2.5 Flash (standard, replaced by Flash-Lite in session 31):** $0.30/1M input, $2.50/1M output — output rate **includes thinking tokens**, so a reasoning-chain call costs 2–4× the headline rate. Our calls do not use thinking mode, so effective output cost is lower; exact non-thinking rate: verify at source. `[2-1]`
 
 ---
 
@@ -122,7 +122,7 @@ Stripe standard rate `[est — industry standard, not confirmed in this research
 The $0.30 flat fee is disproportionately large at low price points:
 
 | Plan | Gross/Subscriber | Stripe Fee | Net/Subscriber | Stripe Take-Rate |
-|------|-----------------|-----------|---------------|-----------------|
+| ------ | ----------------- | ----------- | --------------- | ----------------- |
 | Monthly ($3/mo) | $3.00 | $0.387 | **$2.61** | 13% |
 | Annual ($25/yr) | $25.00 | $1.025 | **$23.98** | 4.1% |
 
@@ -135,7 +135,7 @@ The $0.30 flat fee is disproportionately large at low price points:
 ### Free-to-paid conversion
 
 | Percentile | Rate | Source |
-|------------|------|--------|
+| ------------ | ------ | -------- |
 | Bottom 25% | < 2.5% | ChartMogul Jan 2026, n=200 `[3-0]` |
 | 50th percentile ("good") | 3–5% | ChartMogul Jan 2026 `[3-0]` |
 | 75th percentile ("great") | 8–12% | ChartMogul Jan 2026 |
@@ -147,7 +147,7 @@ The $0.30 flat fee is disproportionately large at low price points:
 ### Year-1 Retention by Plan Type
 
 | Plan | Year-1 Retention | Monthly Churn Implied |
-|------|-----------------|----------------------|
+| ------ | ----------------- | ---------------------- |
 | Monthly | 17% | ~14%/mo |
 | Annual | 44.1% | ~56% annual churn |
 
@@ -173,7 +173,7 @@ Annual LTV is **2.3× higher** than monthly. This is the most important number i
 **Assumptions:** 3% conversion (optimistic/B2B) and 1% (B2C reality); all monthly subscribers; Amazon Associates excluded (see section 7).
 
 | Scenario | Gross Revenue | Stripe Fees | Net Revenue | Infra Costs | **Net Monthly** |
-|----------|--------------|------------|------------|------------|----------------|
+| ---------- | -------------- | ------------ | ------------ | ------------ | ---------------- |
 | 100 MAU, 3 paid (3%) | $9 | −$1.16 | $7.84 | −$21 | **−$13.16 (loss)** |
 | 100 MAU, 1 paid (1%) | $3 | −$0.39 | $2.61 | −$21 | **−$18.39 (loss)** |
 | 1,000 MAU, 30 paid (3%) | $90 | −$11.61 | $78.39 | −$27 | **+$51.39 (+68% margin)** |
@@ -228,7 +228,7 @@ Showing ads to free users (hidden from paid subscribers) is a standard freemium 
 The network landscape shifted significantly in late 2025 and early 2026:
 
 | Network | Minimum Requirement | RPM Range (entertainment, US/Tier 1 traffic) | Verdict |
-|---------|--------------------|--------------------------------------------|---------|
+| --------- | -------------------- | -------------------------------------------- | --------- |
 | **Google AdSense** | None formal; practical approval requires established audience | $1–$5 | Entry point — viable from day 1 `[3-0]` |
 | **Mediavine Journey** | 1,000 sessions/mo (cut from 10,000 in Oct 2025) | $15–$40+ | Step-up option once ~500+ MAU `[3-0]` |
 | **Raptive** | 25,000 pageviews/mo + 50% Tier 1 traffic (cut from 100,000 in Oct 2025) | $13–$15 baseline; $47+ in favorable/Q4 conditions | Target at ~3,000–5,000 MAU `[3-0]` |
@@ -245,7 +245,7 @@ Letterboxd, the closest publicly comparable product, averages **10.88 pages/visi
 Assumes: 97% of MAU are free users (3% conversion); 10 pageviews/free user/month.
 
 | Tier | Free User Pageviews/mo | Network | RPM Used | Monthly Ad Revenue |
-|------|------------------------|---------|----------|--------------------|
+| ------ | ------------------------ | --------- | ---------- | -------------------- |
 | 100 MAU | ~970 | AdSense (only option — sessions too low for Journey) | $2 conservative | **~$2/mo** |
 | 1,000 MAU | ~9,700 | AdSense | $2 | **~$19/mo** |
 | 1,000 MAU | ~9,700 | Mediavine Journey (if approved) | $15–$40 | **~$146–$388/mo** `[est]` |
@@ -258,7 +258,7 @@ Assumes: 97% of MAU are free users (3% conversion); 10 pageviews/free user/month
 ### Revised Net Monthly at 10,000 MAU (additive to Section 5)
 
 | Scenario | Subscription Net | Ad Revenue (AdSense floor) | Ad Revenue (MV Journey mid) | Combined Net |
-|----------|-----------------|--------------------------|----------------------------|--------------|
+| ---------- | ----------------- | -------------------------- | ---------------------------- | -------------- |
 | 10K MAU, 1% paid, AdSense | +$191 | +$194 | — | **~+$385/mo** |
 | 10K MAU, 1% paid, MV Journey | +$191 | — | +$2,668 | **~+$2,859/mo** |
 | 10K MAU, 3% paid, AdSense | +$714 | +$194 | — | **~+$908/mo** |
@@ -281,7 +281,7 @@ Ads on the free tier reduce urgency to convert. The lift in ad revenue must be w
 ## 9. Competitive Benchmarks
 
 | Product | Pricing | Model | Notes |
-|---------|---------|-------|-------|
+| --------- | --------- | ------- | ------- |
 | **Letterboxd** | $19/yr Pro, $49/yr Patron | Freemium + web subscriptions | `[3-0 verified]` Via Paddle; web + iOS + Google Play |
 | **Trakt** | $60/yr VIP | Freemium | `[3-0 verified]` **Doubled from $30/yr in Feb 2025.** User exodus is live. |
 | **JustWatch** | Free (ad-supported) | Ad revenue | Anchors user price-sensitivity near $0 for feature-comparable use |
@@ -301,14 +301,14 @@ Rule of thumb: CAC should be < ⅓ of LTV.
 
 ### Typical paid CAC estimates `[est — not verified]`
 
-| Channel | Cost per Free Signup | Cost per Paid Sub (3% conv) | Viable? |
-|---------|---------------------|---------------------------|---------|
-| Reddit organic | $0 | $0 | **Yes — do this first** |
-| SEO/content | $0 direct | $0 direct | **Yes — compounds over time** |
-| Product Hunt | $0 direct | $0 direct | Yes — week 2 after domain live |
-| Reddit Ads | $5–15 | $167–500 | No |
-| Google Ads | $7–50 | $233–1,667 | No |
-| Meta/TikTok | similar | similar | No |
+| Channel | Cost per Free Signup | Cost per Paid Sub (3% conv) | Viable? | Status |
+| --------- | --------------------- | --------------------------- | --------- | -------- |
+| Reddit organic | $0 | $0 | **Yes — do this first** | **In progress** — BustedBoardBot karma-building started 2026-06-22; 3 helpful-only comments posted in r/trakt. Sam's personal intro post ready to go once bot has ~10 karma. |
+| SEO/content | $0 direct | $0 direct | **Yes — compounds over time** | Not started — custom domain needed first |
+| Product Hunt | $0 direct | $0 direct | Yes — week 2 after domain live | Not started |
+| Reddit Ads | $5–15 | $167–500 | No | — |
+| Google Ads | $7–50 | $233–1,667 | No | — |
+| Meta/TikTok | similar | similar | No | — |
 
 **Don't spend money on ads until you've validated conversion from organic channels and are self-sustaining at 10K+ MAU.** At 10K MAU with 3% conversion (~$714/mo net), you could allocate $200/mo to Reddit Ads or SEO tools and still profit.
 
@@ -317,7 +317,7 @@ Rule of thumb: CAC should be < ⅓ of LTV.
 ## 11. Known Gaps & Unverified Assumptions
 
 | Item | Status | Impact |
-|------|--------|--------|
+| ------ | -------- | -------- |
 | 3% B2C conversion | Optimistic ceiling, not median — 1% is realistic base case | **High** |
 | Amazon Associates revenue | Unverified; likely near $0 | Medium — upside only |
 | Vercel Pro overages at 10K MAU | Not confirmed; $20/mo is a floor | Low |
@@ -335,18 +335,19 @@ Rule of thumb: CAC should be < ⅓ of LTV.
 Break-even requires only **8 paying subscribers** (~267 MAU at 3% conversion). Infrastructure is near-free through 1,000 MAU (~$27/mo). The real business emerges at 1,000+ MAU: at 3% conversion you're profitable at +$51/mo; at 10,000 MAU, ~+$714/mo ($8,567/yr net).
 
 **Immediate priorities:**
-1. Post on r/trakt now — Trakt doubled to $60/yr and users are leaving
+1. **Reddit outreach underway** — BustedBoardBot karma-building started 2026-06-22 (3 helpful-only comments in r/trakt). Sam's personal intro post ready; post once bot has ~10 karma. r/trakt is prime: Trakt doubled to $60/yr and users are leaving.
 2. Push annual plan ($25/yr) over monthly ($3/mo) — 2.3× better LTV, 2.6× better retention, 3× lower Stripe cut
 3. Form home-state LLC (~$130–200) before collecting any revenue
-4. Switch Gemini to Flash-Lite if not already — saves ~$13–28/mo at 10K MAU
-5. Don't model Amazon Associates revenue until you have 90 days of real clickthrough data
+4. ~~Switch Gemini to Flash-Lite~~ **Done ✓** (session 31) — saves ~$13–28/mo at 10K MAU vs Flash
+5. ~~Get paid Google AI Studio key~~ **Done ✓** (session 33) — Paid 1 tier active, $25 credit, RPD limit removed
+6. Don't model Amazon Associates revenue until you have 90 days of real clickthrough data
 
 ---
 
 ## Sources
 
 | Source | Type | Used For |
-|--------|------|---------|
+| -------- | ------ | --------- |
 | [Vercel Plans](https://vercel.com/docs/plans/hobby) | Primary | Hobby commercial restriction |
 | [Neon Pricing](https://neon.com/docs/introduction/plans) | Primary | DB plan tiers and compute pricing |
 | [Upstash Redis Pricing](https://upstash.com/docs/redis/overall/pricing) | Primary | Redis command pricing |

@@ -84,3 +84,11 @@ export const CATALOG_MOTN_SAFE_BUDGET = CATALOG_MOTN_MONTHLY_BUDGET - CATALOG_MO
 
 // Maximum fraction of the final feed that can be TV shows (prevents flooding)
 export const CATALOG_TV_FEED_MAX_RATIO = 0.4;
+
+// --- Enrichment ---
+
+// Rows to enrich per sync-catalog call (keeps total wall time under Vercel Hobby 10s limit)
+export const CATALOG_ENRICH_ROWS_PER_SYNC = 40;
+
+// Rows to enrich per dedicated enrich-catalog call (60 rows × ~100ms/row ≈ 6s)
+export const CATALOG_ENRICH_ROWS_PER_CALL = 60;

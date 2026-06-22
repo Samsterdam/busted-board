@@ -50,6 +50,23 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 
 ---
 
+## 2026-06-22 (session 34c — Fix missing movie descriptions)
+
+### Done
+
+- **Root cause**: `media.overview` is null for most catalog rows. `enrichCatalogData()` was called at the end of `sync-catalog` but Vercel Hobby's 10-second function timeout cut it off before it could TMDB-fetch all ~1500 rows.
+- **Fix**:
+  - `src/lib/catalog-poster-warmup.ts` — `enrichCatalogData` now accepts an optional `limit` param and returns `{ enriched, remaining }` instead of just a count.
+  - `src/app/api/admin/sync-catalog/route.ts` — caps enrichment to 40 rows per sync call (stays under timeout).
+  - `src/app/api/admin/enrich-catalog/route.ts` — new dedicated POST endpoint; processes 60 rows per call, returns `{ enriched, remaining }`.
+  - `src/components/settings/AdminSection.tsx` — "Enrich Descriptions" button; press until it reports "All done!"
+
+### Next
+
+Deploy and press "Enrich Descriptions" in Settings → Admin until remaining = 0.
+
+---
+
 ## 2026-06-22 (session 34b — Free resource suggestion workflow)
 
 ### Done

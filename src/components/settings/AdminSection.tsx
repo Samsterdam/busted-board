@@ -23,6 +23,8 @@ export function AdminSection() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [enriching, setEnriching] = useState(false);
+  const [enrichResult, setEnrichResult] = useState<string | null>(null);
 
   function loadSyncStatus() {
     const capturedNow = Date.now();
@@ -62,6 +64,33 @@ export function AdminSection() {
     if (!stats) return false;
     return nowMs - new Date(stats.syncedAt).getTime() < MS_PER_DAY;
   }
+
+  const handleEnrich = useCallback(async () => {
+    setEnriching(true);
+    setEnrichResult(null);
+    const secret = process.env.NEXT_PUBLIC_CATALOG_SYNC_SECRET ?? "";
+    let totalEnriched = 0;
+    try {
+      while (true) {
+        const res = await fetch("/api/admin/enrich-catalog", {
+          method: "POST",
+          headers: { "x-sync-secret": secret },
+        });
+        const data = await res.json() as { enriched?: number; remaining?: number; error?: string };
+        if (!res.ok) { toast.error(data.error ?? "Enrich failed"); return; }
+        totalEnriched += data.enriched ?? 0;
+        const remaining = data.remaining ?? 0;
+        setEnrichResult(`Enriched ${totalEnriched} rows so far… ${remaining} remaining`);
+        if (remaining === 0) break;
+      }
+      setEnrichResult(`Done — enriched ${totalEnriched} rows.`);
+      toast.success("All descriptions filled in!");
+    } catch {
+      toast.error("Enrich failed.");
+    } finally {
+      setEnriching(false);
+    }
+  }, []);
 
   const handleSyncCatalog = useCallback(async (type: SyncType) => {
     setSyncing(type);
@@ -152,6 +181,20 @@ export function AdminSection() {
         })}
 
         {syncResult && <p className="text-xs text-green-400">{syncResult}</p>}
+
+        <div className="rounded-lg border border-border/50 p-3 space-y-2">
+          <p className="text-xs font-medium">Enrich Descriptions</p>
+          <p className="text-[11px] text-muted-foreground">Fills missing overviews from TMDB. Runs automatically until all rows are enriched.</p>
+          <Button
+            variant="outline"
+            className="w-full text-xs"
+            onClick={handleEnrich}
+            disabled={enriching || syncing !== null}
+          >
+            {enriching ? "Enriching…" : "Enrich Descriptions"}
+          </Button>
+          {enrichResult && <p className="text-[11px] text-green-400">{enrichResult}</p>}
+        </div>
       </div>
     </section>
   );
