@@ -88,7 +88,10 @@ export default function GrowthPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-white">Growth Dashboard</h1>
-          <p className="text-[11px] text-zinc-600 tabular-nums">Build #{process.env.NEXT_PUBLIC_BUILD_NUMBER} · {new Date(process.env.NEXT_PUBLIC_BUILD_DATE ?? "").toLocaleString()}</p>
+          <div className="flex items-center gap-3 mt-0.5">
+            <p className="text-[11px] text-zinc-600 tabular-nums">Build #{process.env.NEXT_PUBLIC_BUILD_NUMBER} · {new Date(process.env.NEXT_PUBLIC_BUILD_DATE ?? "").toLocaleString()}</p>
+            <a href="/admin/suggestions" className="text-[11px] text-zinc-500 hover:text-zinc-300 underline">Suggestions →</a>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {scanResult && (

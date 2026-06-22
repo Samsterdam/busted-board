@@ -66,7 +66,12 @@ export async function POST(request: Request) {
 
   const parsed = validateCommunityUrl(body.url);
   if (!parsed) {
-    return Response.json({ error: "URL must be http/https and from an allowed streaming domain" }, { status: 400 });
+    let domain: string | undefined;
+    try { domain = new URL(body.url).hostname.toLowerCase(); } catch { /* invalid URL */ }
+    return Response.json(
+      { error: "domain_not_allowed", domain, message: "URL must be from an allowed streaming domain" },
+      { status: 400 }
+    );
   }
 
   if (body.label && body.label.length > LINK_LABEL_MAX_LENGTH) {

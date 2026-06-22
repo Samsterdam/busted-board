@@ -9,6 +9,7 @@ import { StarRating } from "@/components/ratings/StarRating";
 import { CinemaScoreBadge, ThreeScoreRow } from "./ScoreDisplay";
 import { RibbonBadge } from "./RibbonBadge";
 import { CommunityLinkSubmitForm } from "./CommunityLinkSubmitForm";
+import { SuggestPlatformForm } from "@/components/SuggestPlatformForm";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { toast } from "sonner";
 import { getWatchUrl } from "@/lib/config/affiliates";
@@ -36,6 +37,7 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
   const [saving, setSaving] = useState(false);
   const [communityLinks, setCommunityLinks] = useState<CommunityLink[] | null>(null);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [showSuggestPlatform, setShowSuggestPlatform] = useState(false);
 
   useEffect(() => {
     fetch(`/api/community-links?tmdbId=${item.tmdbId}&tmdbType=${item.tmdbType}`)
@@ -190,6 +192,25 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
             </div>
           )}
 
+          {/* Platform suggestion */}
+          {!showSuggestPlatform ? (
+            <p className="text-[10px] text-muted-foreground/60">
+              Missing a free platform?{" "}
+              <button
+                type="button"
+                onClick={() => setShowSuggestPlatform(true)}
+                className="underline hover:text-foreground transition-colors"
+              >
+                Suggest it →
+              </button>
+            </p>
+          ) : (
+            <SuggestPlatformForm
+              onSubmitted={() => setShowSuggestPlatform(false)}
+              onCancel={() => setShowSuggestPlatform(false)}
+            />
+          )}
+
           {/* Community free links */}
           {communityLinks !== null && (
             <div className="space-y-2 border-t border-border pt-3">
@@ -243,6 +264,7 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
                 <CommunityLinkSubmitForm
                   tmdbId={item.tmdbId}
                   tmdbType={item.tmdbType}
+                  mediaTitle={item.title}
                   onSubmitted={async () => {
                     setShowSubmitForm(false);
                     await refetchCommunityLinks();

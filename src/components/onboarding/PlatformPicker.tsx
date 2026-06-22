@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { PAID_PLATFORMS, FREE_PLATFORMS } from "@/lib/platforms";
 import { CheckIcon } from "lucide-react";
+import { SuggestPlatformForm } from "@/components/SuggestPlatformForm";
 
 interface Props {
   selected: string[];
@@ -9,6 +11,8 @@ interface Props {
 }
 
 export function PlatformPicker({ selected, onChange }: Props) {
+  const [showSuggest, setShowSuggest] = useState(false);
+
   function toggle(slug: string) {
     onChange(
       selected.includes(slug) ? selected.filter((s) => s !== slug) : [...selected, slug]
@@ -34,6 +38,24 @@ export function PlatformPicker({ selected, onChange }: Props) {
         selected={selected}
         onToggle={toggle}
       />
+
+      {showSuggest ? (
+        <SuggestPlatformForm
+          onSubmitted={() => setShowSuggest(false)}
+          onCancel={() => setShowSuggest(false)}
+        />
+      ) : (
+        <p className="text-xs text-muted-foreground/60 mt-1">
+          Don&apos;t see your platform?{" "}
+          <button
+            type="button"
+            onClick={() => setShowSuggest(true)}
+            className="underline hover:text-foreground transition-colors"
+          >
+            Suggest it →
+          </button>
+        </p>
+      )}
     </div>
   );
 }

@@ -371,3 +371,45 @@ export const communityLinkFlags = pgTable(
   },
   (t) => [unique("community_link_flags_unique").on(t.linkId, t.userId)]
 );
+
+// --- User-submitted suggestions ------------------------------------------
+
+export const platformSuggestions = pgTable(
+  "platform_suggestions",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    name: text("name").notNull(),
+    websiteUrl: text("website_url"),
+    notes: text("notes"),
+    status: text("status").notNull().default("pending"),
+    adminNotes: text("admin_notes"),
+    submittedAt: timestamp("submitted_at").defaultNow(),
+  },
+  (t) => [index("platform_suggestions_user_idx").on(t.userId)]
+);
+
+export const linkSuggestions = pgTable(
+  "link_suggestions",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    tmdbId: integer("tmdb_id").notNull(),
+    tmdbType: text("tmdb_type").notNull(),
+    mediaTitle: text("media_title"),
+    url: text("url").notNull(),
+    domain: text("domain").notNull(),
+    label: text("label"),
+    status: text("status").notNull().default("pending"),
+    adminNotes: text("admin_notes"),
+    submittedAt: timestamp("submitted_at").defaultNow(),
+  },
+  (t) => [
+    unique("link_suggestions_url_unique").on(t.tmdbId, t.tmdbType, t.url),
+    index("link_suggestions_user_idx").on(t.userId),
+  ]
+);

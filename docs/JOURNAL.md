@@ -50,6 +50,29 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 
 ---
 
+## 2026-06-22 (session 34b — Free resource suggestion workflow)
+
+### Done
+
+- **Platform suggestions** — users can suggest missing free/paid platforms via "Don't see your platform? Suggest it →" link in `PlatformPicker` (shows in both onboarding and settings) and "Missing a free platform? Suggest it →" in the movie detail modal.
+- **Link suggestions** — when a community link URL fails domain validation, `CommunityLinkSubmitForm` now branches into a suggestion flow instead of a dead-end error. Full state machine: `idle → submitting → domain_error → suggesting → suggestion_success`.
+- **Admin review page** — `/admin/suggestions` with Platforms / Links tabs and pending/approved/rejected filter. Platform suggestions are client-side grouped by name with a count badge. Link suggestion approval auto-promotes the link into `community_links` (cap-checked; returns 409 if title is at max).
+- **Admin nav** — "Suggestions →" link added to Growth Dashboard; "← Growth dashboard" on suggestions page.
+- **DB** — `platform_suggestions` + `link_suggestions` tables added to schema; migration `0009_nostalgic_sharon_ventura.sql` generated and applied to Neon ✓.
+- **API** — `POST /api/suggestions/platform`, `POST /api/suggestions/link`, `GET+PATCH /api/admin/suggestions`. Community-links API now returns `{ error: "domain_not_allowed", domain, message }` instead of generic string.
+
+### Decisions
+
+- Link suggestion approval is a hard cap check: if `MAX_LINKS_PER_MEDIA` (5) is already hit, the PATCH returns 409 and the suggestion status is NOT updated. Admin must resolve the cap first.
+- Rejected suggestions are blocked from resubmission via unique constraint on `(tmdbId, tmdbType, url)` — intentional v1 behavior.
+- `adminNotes` are internal only; no notification system exists to surface them to users.
+
+### Next
+
+No new blockers. See pre-launch polish checklist above.
+
+---
+
 ## 2026-06-22 (session 34 — Landing page for logged-out visitors)
 
 ### Done
