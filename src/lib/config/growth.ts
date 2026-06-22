@@ -11,18 +11,25 @@ export const GROWTH_SUBREDDITS = [
 ] as const;
 
 export const GROWTH_KEYWORDS = [
-  "Trakt too expensive",
-  "Trakt alternative",
-  "JustWatch alternative",
-  "JustWatch ads",
-  "streaming recommendations",
-  "what should I watch",
+  // Competitor signals
+  "trakt alternative",
+  "trakt too expensive",
+  "justwatch alternative",
+  "justwatch ads",
+  // Discovery / recommendation requests
+  "what to watch",
+  "what should i watch",
+  "looking for recommendations",
+  "something to watch",
   "recommend something to watch",
+  "streaming recommendation",
   "streaming app recommendation",
+  // Streaming frustration
+  "streaming alternatives",
 ] as const;
 
 /** Minimum Reddit post score (upvotes) to store as an opportunity. */
-export const GROWTH_MIN_SCORE = 2;
+export const GROWTH_MIN_SCORE = 1;
 
 /** Max opportunities to upsert per scanner run (prevents runaway DB writes). */
 export const GROWTH_MAX_OPPORTUNITIES_PER_RUN = 50;
@@ -31,7 +38,7 @@ export const GROWTH_MAX_OPPORTUNITIES_PER_RUN = 50;
 export const GROWTH_MAX_THREAD_AGE_HOURS = 48;
 
 /** Max new posts to fetch per subreddit per scan run. */
-export const GROWTH_POSTS_PER_SUBREDDIT = 25;
+export const GROWTH_POSTS_PER_SUBREDDIT = 50;
 
 /** Max characters of a Reddit post body to persist (keeps rows lean). */
 export const GROWTH_MAX_BODY_LENGTH = 2000;
