@@ -8,12 +8,19 @@ export const GROWTH_SUBREDDITS = [
   "television",
   "netflix",
   "Piracy",
+  "movies",
+  "tvshows",
+  "Letterboxd",
+  "MovieSuggestions",
+  "NetflixBestOf",
+  "mubi",
 ] as const;
 
 export const GROWTH_KEYWORDS = [
   // Competitor mentions (any mention is relevant)
   "trakt",
   "justwatch",
+  "letterboxd",
   // Discovery / recommendation requests
   "what to watch",
   "what should i watch",
@@ -25,6 +32,17 @@ export const GROWTH_KEYWORDS = [
   "looking for something to watch",
   "need something to watch",
   "suggest something",
+  "movie recommendation",
+  "tv recommendation",
+  "show recommendation",
+  // Tracker / watchlist app interest
+  "watchlist app",
+  "watch tracker",
+  "show tracker",
+  "movie tracker",
+  "track my shows",
+  "track what i watch",
+  "letterboxd alternative",
   // Streaming frustration / switching
   "streaming alternative",
   "cancel trakt",
