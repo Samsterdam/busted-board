@@ -254,13 +254,14 @@ async function syncWatchmodePlatform(
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  if (env.ADMIN_EMAIL && session.user.email !== env.ADMIN_EMAIL) return Response.json({ error: "Forbidden" }, { status: 403 });
-
   const secret = request.headers.get("x-sync-secret");
-  if (env.CATALOG_SYNC_SECRET && secret !== env.CATALOG_SYNC_SECRET) {
-    return Response.json({ error: "Invalid sync secret" }, { status: 401 });
+  const secretValid = env.CATALOG_SYNC_SECRET && secret === env.CATALOG_SYNC_SECRET;
+
+  if (!secretValid) {
+    // Fall back to session-based auth if secret not provided or not configured
+    const session = await auth();
+    if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (env.ADMIN_EMAIL && session.user.email !== env.ADMIN_EMAIL) return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const url = new URL(request.url);
