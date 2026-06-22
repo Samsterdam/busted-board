@@ -30,11 +30,8 @@ export const env = {
   CATALOG_SYNC_SECRET: process.env.CATALOG_SYNC_SECRET,
   /** Optional — email address that sees the admin sync UI. */
   ADMIN_EMAIL: process.env.ADMIN_EMAIL,
-  /** Optional — Reddit OAuth script-app credentials for growth automation. */
-  REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
-  REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
-  REDDIT_USERNAME: process.env.REDDIT_USERNAME,
-  REDDIT_PASSWORD: process.env.REDDIT_PASSWORD,
+  /** Optional — ScrapeCreators API key for Reddit data (replaces deprecated Reddit OAuth). */
+  SCRAPECREATORS_API_KEY: process.env.SCRAPECREATORS_API_KEY,
   /** Optional — Bearer token for the /api/admin/growth/scan cron endpoint. */
   GROWTH_ADMIN_SECRET: process.env.GROWTH_ADMIN_SECRET,
 } as const;
