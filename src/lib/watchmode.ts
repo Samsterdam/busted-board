@@ -6,6 +6,7 @@ import {
 } from "./config/catalog";
 
 const WATCHMODE_BASE = "https://api.watchmode.com/v1";
+const MAX_ERR_LEN = 200;
 
 export interface WatchmodeTitle {
   tmdbId: number;
@@ -42,7 +43,7 @@ export async function fetchWatchmodeTitles(
 
   try {
     const res = await fetch(`${WATCHMODE_BASE}/list-titles/?${params}`);
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error(`Watchmode ${res.status}: ${await res.text().then(t => t.slice(0, MAX_ERR_LEN))}`);
 
     const data = await res.json() as {
       titles?: Array<{ tmdb_id?: number; title?: string; year?: number; type?: string }>;
