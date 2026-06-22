@@ -4,7 +4,7 @@ const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
 if (POSTHOG_KEY) {
   posthog.init(POSTHOG_KEY, {
-    api_host: "https://app.posthog.com",
+    api_host: "https://us.i.posthog.com",
     capture_pageview: true,
     capture_pageleave: true,
     autocapture: false,

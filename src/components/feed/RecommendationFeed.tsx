@@ -149,6 +149,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
   }
 
   async function handleThumbsUp(item: FeedItem) {
+    posthog.capture(EVENTS.MOVIE_RATED, { tmdbId: item.tmdbId, title: item.title, mediaType: item.tmdbType, rating: RATING_MAX });
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
     setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     await fetch("/api/ratings", {
@@ -180,6 +181,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
       setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     }
 
+    posthog.capture(EVENTS.WATCHLIST_TOGGLED, { tmdbId: item.tmdbId, title: item.title, mediaType: item.tmdbType, action: inList ? "remove" : "add" });
     await fetch("/api/watchlist", {
       method: inList ? "DELETE" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -249,7 +251,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
             {cardSize === "md" && <Grid2x2 className="h-4 w-4" aria-hidden="true" />}
             {cardSize === "lg" && <Rows3 className="h-4 w-4" aria-hidden="true" />}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => loadFeed(true)}
+          <Button variant="ghost" size="sm" onClick={() => { posthog.capture(EVENTS.FEED_RESHUFFLED); loadFeed(true); }}
             disabled={refreshing} aria-label="Refresh recommendations">
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
           </Button>
@@ -309,7 +311,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
                   userRating={userRatings[item.tmdbId]}
                   inWatchlist={watchlistIds.has(item.tmdbId)}
                   inWatched={watchedIds.has(item.tmdbId)}
-                  onClick={() => setSelectedItem(item)}
+                  onClick={() => { posthog.capture(EVENTS.MOVIE_DETAIL_OPENED, { tmdbId: item.tmdbId, title: item.title, mediaType: item.tmdbType }); setSelectedItem(item); }}
                   onRate={() => setSelectedItem(item)}
                   onDismiss={() => handleDismiss(item)}
                   onWatchlist={() => handleWatchlist(item)}

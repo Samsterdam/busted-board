@@ -68,6 +68,7 @@ export default function SettingsPage() {
           body: JSON.stringify({ country, preferCaptions }),
         }),
       ]);
+      posthog.capture(EVENTS.PLATFORM_CHANGED, { platform_count: selectedPlatforms.length });
       toast.success("Settings saved!");
     } catch {
       toast.error("Could not save settings.");
@@ -78,7 +79,7 @@ export default function SettingsPage() {
 
   async function handleShare() {
     try {
-      posthog.capture(EVENTS.SHARE_USED, { method: navigator.share ? "native" : "clipboard" });
+      posthog.capture(EVENTS.SHARE_USED, { method: "share" in navigator ? "native" : "clipboard" });
       if (navigator.share) {
         await navigator.share({ title: "Busted Board", text: APP_SHARE_TEXT, url: APP_URL });
       } else {
@@ -194,7 +195,7 @@ export default function SettingsPage() {
 
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => { posthog.capture(EVENTS.SIGN_OUT); signOut({ callbackUrl: "/login" }); }}
           className="w-full text-sm text-muted-foreground hover:text-destructive transition-colors underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
         >
           Sign out
