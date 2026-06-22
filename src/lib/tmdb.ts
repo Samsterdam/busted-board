@@ -35,12 +35,12 @@ export function logoUrl(path: string | null | undefined, size: "w45" | "w92" | "
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
 
-export async function fetchMovieDetails(tmdbId: number): Promise<{ poster_path: string | null }> {
-  return tmdbFetch<{ poster_path: string | null }>(`/movie/${tmdbId}`);
+export async function fetchMovieDetails(tmdbId: number): Promise<{ poster_path: string | null; overview: string }> {
+  return tmdbFetch<{ poster_path: string | null; overview: string }>(`/movie/${tmdbId}`);
 }
 
-export async function fetchShowDetails(tmdbId: number): Promise<{ poster_path: string | null }> {
-  return tmdbFetch<{ poster_path: string | null }>(`/tv/${tmdbId}`);
+export async function fetchShowDetails(tmdbId: number): Promise<{ poster_path: string | null; overview: string }> {
+  return tmdbFetch<{ poster_path: string | null; overview: string }>(`/tv/${tmdbId}`);
 }
 
 export interface TmdbMovie {
