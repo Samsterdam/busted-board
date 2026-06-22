@@ -5,40 +5,40 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
-## NEXT SESSION — START HERE (last updated 2026-06-14)
+## NEXT SESSION — START HERE (last updated 2026-06-22)
 
 Complete ordered checklist. Top = highest priority / blocking.
 
 ### Must do before any users see the app
 
-1. **Vercel Pro upgrade** — vercel.com/account/billing. Hobby plan prohibits commercial use; Stripe payments make this mandatory ($20/mo)
-2. **Stripe setup** — stripe.com → Create account → 2 products ($3/mo, $25/yr) → 5 env vars in Vercel → register webhook. Full step-by-step in session 21 entry below. Also add `trial_period_days: 14` to checkout config (one line, 2–3× conversion uplift)
-3. **Reddit app** — reddit.com/prefs/apps → Create app → type: **script** → copy `client_id` + `client_secret`
-4. **5 Vercel env vars (growth automation)** — `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`, `REDDIT_PASSWORD`, `GROWTH_ADMIN_SECRET` = (value saved in your password manager — generate fresh with `openssl rand -base64 32`)
-5. **2 GitHub Actions secrets** — repo → Settings → Secrets: `APP_URL` = `https://busted-board.vercel.app` and `GROWTH_ADMIN_SECRET` = same value as above
-6. **Fix `DELETE /api/user` bug** — `subscriptions` and `communityLinks`/`communityLinkFlags` rows are not deleted on account deletion. Fix before any users sign up: cancel active Stripe sub via API, then delete those rows explicitly
+1. **Vercel Pro upgrade** — vercel.com/account/billing. Hobby plan prohibits commercial use; Stripe payments make this mandatory ($20/mo). Defer until Stripe is ready.
+2. **Stripe setup** — launching free-first (beta), so defer Stripe until after initial user feedback. When ready: stripe.com → 2 products ($3/mo, $25/yr) → 5 env vars in Vercel → webhook. See session 21 entry for step-by-step.
+3. ~~**Reddit app**~~ — applied for Reddit API access 2026-06-22; reCAPTCHA blocked app creation in browser. Scanner now uses public `/new.json` listing API (no OAuth needed for reads). OAuth still needed for posting comments — revisit when Reddit approves access.
+4. ~~**GitHub Actions secrets**~~ — `APP_URL` + `GROWTH_ADMIN_SECRET` both set ✓
+5. ~~**Fix `DELETE /api/user` bug**~~ — fixed ✓ (`communityLinks` + `communityLinkFlags` now deleted; Stripe cancellation TODO comment added for when Stripe goes live)
 
 ### Pre-launch polish (before GTM push)
 
-- **Paid Google AI Studio key** — aistudio.google.com → enable billing → swap in paid key as `GEMINI_API_KEY` in Vercel. Free tier RPD limit (~500–1,500/day) will hit if any post goes viral. Do before the Reddit push. ~$3–5/mo at 1K MAU.
-- **Switch Gemini to Flash-Lite** — change `"gemini-2.5-flash"` → `"gemini-2.5-flash-lite"` in `src/lib/gemini.ts` and `src/lib/config/growth.ts`. Our calls don't use thinking mode — no quality tradeoff, cuts Gemini cost ~5–10×.
-- **OG image** — Canva → `public/og-default.png`, 1200×630, dark background, "Busted Board" wordmark + tagline "AI recommendations. No sponsored results." (~10 min)
+- **Paid Google AI Studio key** — aistudio.google.com → enable billing → swap in paid key as `GEMINI_API_KEY` in Vercel. Free tier RPD ~1,500/day will hit if any post goes viral. Do before the Reddit push. ~$1/mo at 1K MAU on Flash-Lite.
+- ~~**Switch Gemini to Flash-Lite**~~ — done ✓ (`gemini-2.5-flash-lite` in `src/lib/gemini.ts` + `src/lib/config/growth.ts`)
+- **OG image** — Canva → `public/og-default.png`, 1200×630, dark background, "Busted Board" wordmark + tagline "AI recommendations. No sponsored results." (~10 min). Needed before Product Hunt and social sharing.
 - **Custom domain** — `bustedboard.com` (~$12/yr). Update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel
 - **Google Search Console** — add property, submit `/sitemap.xml`. Do after domain is live
-- **Sentry + PostHog** — `@sentry/nextjs` for errors + PostHog for product funnels/session replay. Install before any GTM push. 12 specific events to instrument — see session 27 plan at `.claude/plans/we-need-to-make-purring-giraffe.md`
+- **Sentry + PostHog** — `@sentry/nextjs` for errors + PostHog for product funnels/session replay. Install before any GTM push. 12 specific events to instrument — plan file missing; reconstruct from session 27 journal entry.
+- **Verify Reddit scan works** — check Vercel function logs after clicking "Scan Reddit" on `/admin/growth`. If still "0 new, 0 skipped", Reddit is blocking Vercel IPs for `/new.json` too → fallback: RSS feeds (`www.reddit.com/r/{subreddit}/new.rss`).
 
 ### Marketing (phase 1 — 0→100 users)
 
-- **r/trakt post** — draft ready in session 21 conversation. Post after Reddit creds are live in Vercel (step 5). Fastest acquisition path — Trakt doubled to $60/yr and users are actively leaving
-- **r/cordcutters + r/streaming** — days 3 and 5 after r/trakt. Stagger posts, disclose you're the maker
-- **Product Hunt** — week 2 after Search Console is live. Needs OG image + demo GIF + active launch-day presence
-- **Buffer content pipeline** — `/admin/growth` → prompt Gemini to generate 30 posts → queue to Buffer for daily drip
+- **Strategy**: launching free-first (beta). Settings page shows "Beta — free while we build" instead of upgrade buttons. Paid plans deferred.
+- **r/trakt post** — draft ready in session 21 conversation. Post once Reddit scan is confirmed working. Fastest acquisition path — Trakt doubled to $60/yr and users are actively leaving.
+- **r/cordcutters + r/streaming** — days 3 and 5 after r/trakt. Stagger posts, disclose you're the maker.
+- **Product Hunt** — week 2 after Search Console is live. Needs OG image + demo GIF + active launch-day presence.
 
 ### Engineering (phase 2 — 100→1K users)
 
 - **Email layer (Resend)** — welcome email (day 0), weekly digest (day 7), leaving-soon alert. Install `resend`, add `src/lib/config/email.ts`, trigger from NextAuth `signIn` callback
-- **feedCache cleanup TTL bug** — cleanup cron should use 48hr buffer; a hardcoded literal contradicts `FEED_CACHE_MAX_AGE_MS = 12hr`
-- **Test suite (Vitest)** — see session 26 plan at `.claude/plans/bright-humming-sundae.md`. Tier 1: csv-parser, letterboxd-import, trakt-import, validateCommunityUrl. Pre-requisite: add `OMDB_API_KEY` + `AUTH_SECRET` placeholders to `vitest.config.ts`; add `src/lib/__fixtures__/` to `.gitleaks.toml`
+- ~~**feedCache cleanup TTL bug**~~ — investigated; sync-catalog is manual-only so blanket wipe is intentional. Not a bug.
+- **Test suite (Vitest)** — see session 26 plan at `.claude/plans/bright-humming-sundae.md`. Tier 1: csv-parser, letterboxd-import, trakt-import, validateCommunityUrl.
 
 ### International expansion (phase 3+)
 
@@ -47,6 +47,32 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 - **UK first** (~10–20 hrs engineering): Add BBC iPlayer/ITVX/All 4 TMDB provider IDs to `src/lib/platforms.ts`; parameterize `language` in `src/lib/tmdb.ts`; £40 ICO registration
 - **Before South Korea**: verify Watchmode API Korean coverage (`GET /sources/?regions=KR`) — if Wavve/TVING missing, core streaming-filter feature is broken
 - **Before Brazil**: check Globoplay Watchmode coverage (`GET /sources/?regions=BR`) — Amazon.com.br affiliate pays $0 on streaming, use Globoplay CPA instead
+
+---
+
+## 2026-06-22 (session 31 — Reddit scan fix, beta launch prep)
+
+### Done
+
+- **Reddit scan unblocked** — root cause: `APP_URL` GitHub Actions secret was missing (curl exit code 3 = URL malformed). Added `APP_URL` + `GROWTH_ADMIN_SECRET` to GitHub Actions secrets. `GROWTH_ADMIN_SECRET` also added to Vercel production env.
+- **Reddit scanner rewritten** — original OAuth search API blocked by Reddit from Vercel IPs. Switched to unauthenticated public `/new.json` listing per subreddit + local keyword filter. 6 API calls/day instead of 48; 1-second delay between calls. Applied for Reddit API access (OAuth app blocked by reCAPTCHA — multiple browsers failed).
+- **Scan route secured** — `/api/admin/growth/scan` now accepts GROWTH_ADMIN_SECRET bearer token OR valid admin session (was publicly accessible before).
+- **Beta UI** — `SubscriptionSection` shows "Beta — free while we build" + "Beta" badge instead of broken $25/yr + $3/mo upgrade buttons (Stripe not configured). Upgrade buttons reappear automatically when `stripeEnabled` is set in the subscription API response.
+- **User deletion bug fixed** — `communityLinks` + `communityLinkFlags` rows now deleted on account deletion. TODO comment added for Stripe sub cancellation when Stripe goes live.
+- **Gemini Flash-Lite** — switched `gemini-2.5-flash` → `gemini-2.5-flash-lite` in `src/lib/gemini.ts` + `src/lib/config/growth.ts`. Free-tier available, ~5-10× cheaper, no quality tradeoff.
+- **feedCache blanket wipe** — investigated; sync-catalog is manually triggered only, so wiping all caches on sync is intentional. Not a bug.
+- **Strategy decision** — launching free-first (beta), then introducing paid subscriptions. Stripe + Vercel Pro deferred until after initial user feedback.
+
+### Still unknown
+
+- Whether Reddit's public `/new.json` works from Vercel IPs — scan returned "0 new, 0 skipped" which is the same silent-failure signature as the OAuth approach. Check Vercel function logs after next scan to confirm.
+
+### Next actions
+
+1. Check Vercel function logs after scanning — confirm `/new.json` requests succeed. If blocked: switch to RSS feeds.
+2. OG image (Canva, ~10 min) — needed before any social push
+3. Paid AI Studio key — before Reddit community posts go live
+4. Reddit OAuth app — revisit when Reddit approves API access request
 
 ---
 
