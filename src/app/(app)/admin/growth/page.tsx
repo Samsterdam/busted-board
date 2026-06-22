@@ -63,12 +63,12 @@ export default function GrowthPage() {
     setScanResult(null);
     try {
       const res = await fetch("/api/admin/growth/scan", { method: "POST" });
-      const data = (await res.json()) as { inserted?: number; skipped?: number; error?: string; errors?: string[] };
+      const data = (await res.json()) as { inserted?: number; skipped?: number; fetched?: number; error?: string; errors?: string[] };
       if (data.error) {
         setScanResult(`Error: ${data.error}`);
       } else {
         const errSuffix = data.errors?.length ? ` — ${data.errors.length} subreddit(s) failed: ${data.errors.join("; ")}` : "";
-        setScanResult(`Scan done: ${data.inserted} new, ${data.skipped} skipped${errSuffix}`);
+        setScanResult(`Scan done: ${data.inserted} new, ${data.skipped} skipped (${data.fetched ?? 0} fetched)${errSuffix}`);
         if ((data.inserted ?? 0) > 0 && tab === "pending") {
           setLoading(true);
           setTab("pending");
