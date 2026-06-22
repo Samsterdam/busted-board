@@ -30,6 +30,9 @@ export const PLATFORM_REGISTRY: Platform[] = [
   { slug: "kanopy", name: "Kanopy", tmdbId: 191, type: "free" },
   { slug: "plex", name: "Plex", tmdbId: 538, type: "free" },
   { slug: "roku", name: "Roku Channel", tmdbId: 207, type: "free" },
+  { slug: "pbs", name: "PBS", tmdbId: 209, type: "free" },
+  { slug: "vix", name: "ViX", tmdbId: 457, type: "free" },
+  { slug: "xumo", name: "Xumo Play", tmdbId: 1963, type: "free" },
   // Crackle removed: TMDB has no US provider entry for Crackle; old ID 25 was Fandor.
 ];
 

@@ -50,6 +50,23 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 
 ---
 
+## 2026-06-22 (session 33 — Add PBS, ViX, Xumo Play to free platform registry)
+
+### Done
+
+- **Researched free/FAST landscape** — surveyed top AVOD services (Tubi, Pluto, Roku Channel, Xumo Play, PBS, ViX, Samsung TV Plus, etc.) and broadcast TV streaming (NBC/CBS/ABC/FOX apps, PBS.org). Conclusion: PBS is the only broadcast-TV-derived service with a full free on-demand catalog trackable by Watchmode. Linear-only FAST (Samsung TV Plus, LG Channels, Sling Freestream) excluded — no discrete rateable titles.
+- **Added 3 new free platforms** — PBS (TMDB 209, Watchmode 215), ViX (TMDB 457, Watchmode 474), Xumo Play (TMDB 1963, Watchmode 472). All IDs verified against live APIs; web-search guesses for PBS (39) and Xumo (257) were wrong. None present in MOTN (only 20 US services).
+- **Files changed**: `src/lib/platforms.ts`, `src/lib/config/catalog.ts` (Watchmode IDs), `src/lib/config/affiliates.ts` (homepage URLs). PlatformPicker UI, feed/discovery routes, sitemap — all update automatically.
+- **Tests**: lint ✓, typecheck ✓, `platforms.test.ts` 5/5 ✓
+
+### Next
+
+- Hit `POST /api/admin/seed-platforms` after next deploy to upsert new rows into DB
+- Hit `POST /api/admin/sync-catalog` for `pbs`, `vix`, `xumo` to pre-populate catalog (Watchmode budget: 61/2500 used)
+- **UK expansion**: when ready, add BBC iPlayer/ITVX/All 4/My5 the same way (TMDB provider IDs only; Watchmode has no UK free broadcaster coverage)
+
+---
+
 ## 2026-06-22 (session 32 — Growth Dashboard fixes + Reddit scanner via ScrapeCreators)
 
 ### Done

@@ -17,6 +17,9 @@ const PLATFORM_HOMEPAGES: Record<string, string> = {
   kanopy: "https://www.kanopy.com",
   plex: "https://www.plex.tv/watch-free-movies-shows/",
   roku: "https://therokuchannel.roku.com",
+  pbs: "https://www.pbs.org/",
+  vix: "https://www.vix.com/",
+  xumo: "https://www.xumo.com/",
 };
 
 // Affiliate URL builders per platform slug.

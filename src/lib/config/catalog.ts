@@ -29,6 +29,9 @@ export const WATCHMODE_SOURCE_IDS: Partial<Record<string, number>> = {
   youtube: 345,  // YouTube Free
   hoopla: 390,
   plex: 439,
+  pbs: 215,
+  vix: 474,
+  xumo: 472,
 };
 
 // MOTN's API returns this many results per page
