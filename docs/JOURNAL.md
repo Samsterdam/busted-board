@@ -5,7 +5,7 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
-## NEXT SESSION — START HERE (last updated 2026-06-22 session 32)
+## NEXT SESSION — START HERE (last updated 2026-06-22 session 33)
 
 Complete ordered checklist. Top = highest priority / blocking.
 
@@ -19,9 +19,9 @@ Complete ordered checklist. Top = highest priority / blocking.
 
 ### Pre-launch polish (before GTM push)
 
-- **Paid Google AI Studio key** — aistudio.google.com → enable billing → swap in paid key as `GEMINI_API_KEY` in Vercel. Free tier RPD ~1,500/day will hit if any post goes viral. Do before the Reddit push. ~$1/mo at 1K MAU on Flash-Lite.
+- ~~**Paid Google AI Studio key**~~ — done ✓ billing enabled on BusterBoard AI Studio account, $25 credit loaded, Paid 1 tier active.
 - ~~**Switch Gemini to Flash-Lite**~~ — done ✓ (`gemini-2.5-flash-lite` in `src/lib/gemini.ts` + `src/lib/config/growth.ts`)
-- **OG image** — Canva → `public/og-default.png`, 1200×630, dark background, "Busted Board" wordmark + tagline "AI recommendations. No sponsored results." (~10 min). Needed before Product Hunt and social sharing.
+- ~~**OG image**~~ — done ✓ AI-generated, 1200×630, committed to `public/og-default.png`, wired into layout.tsx OpenGraph + Twitter card metadata.
 - **Custom domain** — `bustedboard.com` (~$12/yr). Update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel
 - **Google Search Console** — add property, submit `/sitemap.xml`. Do after domain is live
 - **Sentry + PostHog** — `@sentry/nextjs` for errors + PostHog for product funnels/session replay. Install before any GTM push. 12 specific events to instrument — plan file missing; reconstruct from session 27 journal entry.
@@ -82,6 +82,49 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 
 - Tomorrow when 24h cooldown expires: hit Sync Movies + Sync TV Shows in Settings to keep catalog fresh
 - **UK expansion**: when ready, add BBC iPlayer/ITVX/All 4/My5 the same way (TMDB provider IDs only; Watchmode has no UK free broadcaster coverage)
+
+---
+
+## 2026-06-22 (session 33 — launch prep + first Reddit outreach)
+
+### Done
+
+- **Paid Gemini billing** — AI Studio Paid 1 tier activated, $25 credit, auto-reload recommended. Key unchanged in Vercel.
+- **DMCA email** — created `bustedboarddmca@gmail.com`. Added to Privacy page as Section 9 (full DMCA notice) and Settings footer.
+- **Upstash Redis** — confirmed both env vars set in Vercel (Production + Preview). Rate limiting is active.
+- **OG image** — AI-generated 1200×630 dark-theme image committed to `public/og-default.png`. Wired into `layout.tsx` with OpenGraph + Twitter card metadata.
+- **404 + error pages** — created `src/app/not-found.tsx` and `src/app/(app)/error.tsx`. Branded, dark theme, links back to feed.
+- **Growth Dashboard clipboard copy** — replaced broken "Post to Reddit" button with "Copy draft" (copies to clipboard, shows "Copied!" for 2s) + "Open thread" (links directly to the Reddit post).
+- **Auto-increment build number** — pre-commit hook increments `build-number.txt` on every commit. Currently at ~125.
+- **Growth subreddits/keywords expanded** — added r/movies, r/tvshows, r/Letterboxd, r/MovieSuggestions, r/NetflixBestOf, r/mubi; added "letterboxd", "watchlist app", "track my shows" and other keywords.
+- **Reddit research** — browsed r/trakt, r/cordcutters, r/netflix, r/MovieSuggestions via Chrome DevTools. Key findings:
+  - r/cordcutters: **Rule 9 No AI** — skip for BustedBoardBot
+  - r/netflix: **Rule 4 No appspam, Rule 9 No suggestions** — skip
+  - r/MovieSuggestions: **Rule 7 links must be neutral** — skip
+  - **r/trakt is the primary target** — no bot/AI ban, mods include Trakt staff, users actively frustrated
+- **First BustedBoardBot comments posted** — 3 helpful-only comments (no Busted Board mention) to build karma:
+  1. "How do I find a simple list of watched series" — explained trakt.tv/users/[name]/watched/shows
+  2. "Unable to import my data" — explained zip import bug + manual import workaround
+  3. "I'm unable to access my Trakt account" — explained Hotmail/Outlook silent spam filtering fix
+- **Decision: don't block Reddit promotion on Stripe/Vercel Pro** — app is free beta, no commerce, Hobby plan is fine. Reddit outreach starts now, monetization wired when there are users asking for it.
+
+### BustedBoardBot karma tracker
+
+| Date | Subreddit | Post | Type |
+|------|-----------|------|------|
+| 2026-06-22 | r/trakt | "How do I find a simple list of watched series" | Helpful (no promo) |
+| 2026-06-22 | r/trakt | "Unable to import my data" | Helpful (no promo) |
+| 2026-06-22 | r/trakt | "I'm unable to access my Trakt account" | Helpful (no promo) |
+
+**Next step:** Once BustedBoardBot has ~10 karma, start natural Busted Board mentions in replies. Then post Sam's personal "I built this" intro post in r/trakt.
+
+### Next actions
+
+1. Check BustedBoardBot comment karma in 24-48 hrs
+2. Post Sam's personal intro post in r/trakt once bot has karma
+3. Set up auto-reload on AI Studio billing
+4. Domain registration (bustedboard.com) when ready
+5. Sentry error tracking before any major traffic
 
 ---
 
