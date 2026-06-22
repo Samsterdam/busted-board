@@ -12,6 +12,8 @@ import {
   userPlatforms,
   feedCache,
   importHistory,
+  communityLinks,
+  communityLinkFlags,
 } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
@@ -31,6 +33,9 @@ export async function DELETE() {
   await db.delete(watched).where(eq(watched.userId, userId));
   await db.delete(watchlist).where(eq(watchlist.userId, userId));
   await db.delete(ratings).where(eq(ratings.userId, userId));
+  // TODO: cancel active Stripe subscription via API before this line when Stripe is live
+  await db.delete(communityLinkFlags).where(eq(communityLinkFlags.userId, userId));
+  await db.delete(communityLinks).where(eq(communityLinks.userId, userId));
   await db.delete(users).where(eq(users.id, userId));
 
   return NextResponse.json({ ok: true });

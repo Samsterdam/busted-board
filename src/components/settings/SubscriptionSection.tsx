@@ -8,6 +8,7 @@ import { WATCHLIST_FREE_LIMIT } from "@/lib/config/stripe";
 interface SubscriptionStatus {
   status: "free" | "active" | "canceled" | "past_due";
   currentPeriodEnd?: string;
+  stripeEnabled?: boolean;
 }
 
 export function SubscriptionSection() {
@@ -51,6 +52,7 @@ export function SubscriptionSection() {
   const isFree = !sub || sub.status === "free" || sub.status === "canceled";
   const isActive = sub?.status === "active";
   const isPastDue = sub?.status === "past_due";
+  const stripeEnabled = sub?.stripeEnabled !== false;
 
   const periodEndLabel = sub?.currentPeriodEnd
     ? new Date(sub.currentPeriodEnd).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
@@ -69,7 +71,7 @@ export function SubscriptionSection() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">
-                  {isActive ? "Busted Board Paid" : isFree ? "Free" : "Canceled"}
+                  {isActive ? "Busted Board Pro" : isFree ? (stripeEnabled ? "Free" : "Beta") : "Canceled"}
                 </p>
                 {isActive && periodEndLabel && (
                   <p className="text-xs text-muted-foreground">Renews {periodEndLabel}</p>
@@ -77,7 +79,7 @@ export function SubscriptionSection() {
                 {isPastDue && (
                   <p className="text-xs text-destructive">Payment failed — update your payment method to restore access.</p>
                 )}
-                {isFree && (
+                {isFree && stripeEnabled && (
                   <p className="text-xs text-muted-foreground">
                     Save up to {WATCHLIST_FREE_LIMIT} titles on your watchlist.
                   </p>
@@ -88,11 +90,17 @@ export function SubscriptionSection() {
                 isPastDue ? "bg-destructive/10 text-destructive" :
                 "bg-muted text-muted-foreground"
               }`}>
-                {isActive ? "Active" : isPastDue ? "Past due" : "Free"}
+                {isActive ? "Active" : isPastDue ? "Past due" : stripeEnabled ? "Free" : "Beta"}
               </span>
             </div>
 
-            {isFree && (
+            {isFree && !stripeEnabled && (
+              <p className="text-xs text-muted-foreground">
+                Busted Board is free during beta. Paid plans are coming — you&apos;ll hear about it first.
+              </p>
+            )}
+
+            {isFree && stripeEnabled && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
                   Upgrade for unlimited watchlist, priority support, and supporter badge.

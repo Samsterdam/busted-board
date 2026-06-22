@@ -43,7 +43,7 @@ export const GROWTH_SEARCH_DELAY_MS = 1000;
 export const GROWTH_OPPORTUNITIES_QUERY_LIMIT = 50;
 
 /** Gemini model to use for reply drafting. */
-export const GROWTH_GEMINI_MODEL = "gemini-2.5-flash";
+export const GROWTH_GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 export type OpportunityStatus = "pending" | "drafted" | "posted" | "dismissed";
 export type SocialPostStatus = "draft" | "queued" | "posted";

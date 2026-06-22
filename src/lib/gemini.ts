@@ -6,16 +6,16 @@ import { FALLBACK_RANK_LIMIT } from "./config/feed";
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 
-// Note: gemini-1.5-* models are retired (404), and 2.5-pro has no free-tier
-// quota (429). gemini-2.5-flash is current and available on the free key, so
-// both slots use it. Swap `pro` to "gemini-2.5-pro" if a paid key is set.
+// gemini-2.5-flash-lite: free-tier available, ~5-10x cheaper than flash,
+// no quality tradeoff for our JSON-only calls (no thinking mode used).
+// Swap to "gemini-2.5-flash" or "gemini-2.5-pro" if a paid key is set.
 const flash = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
+  model: "gemini-2.5-flash-lite",
   generationConfig: { responseMimeType: "application/json" },
 });
 
 const pro = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
+  model: "gemini-2.5-flash-lite",
   generationConfig: { responseMimeType: "application/json" },
 });
 
