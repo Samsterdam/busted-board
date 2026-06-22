@@ -162,7 +162,8 @@ async function syncMoTNPlatform(
   slug: string,
   serviceId: string,
   mediaType: MediaType,
-  budgetRemaining: number
+  budgetRemaining: number,
+  force = false
 ): Promise<PlatformSyncResult> {
   // Estimate calls needed: MOVIES_PER_PLATFORM / PAGE_SIZE pages
   const limit = mediaType === "movie" ? CATALOG_MOVIES_PER_PLATFORM : CATALOG_SHOWS_PER_PLATFORM;
@@ -172,9 +173,11 @@ async function syncMoTNPlatform(
     return { count: 0, skipped: true, reason: "budget", callsUsed: 0 };
   }
 
-  const lastSync = await getLastSyncTime(slug, mediaType);
-  if (lastSync && Date.now() - lastSync.getTime() < CATALOG_SYNC_COOLDOWN_MS) {
-    return { count: 0, skipped: true, reason: "cooldown", callsUsed: 0 };
+  if (!force) {
+    const lastSync = await getLastSyncTime(slug, mediaType);
+    if (lastSync && Date.now() - lastSync.getTime() < CATALOG_SYNC_COOLDOWN_MS) {
+      return { count: 0, skipped: true, reason: "cooldown", callsUsed: 0 };
+    }
   }
 
   try {
@@ -214,11 +217,14 @@ async function syncMoTNPlatform(
 async function syncWatchmodePlatform(
   slug: string,
   sourceId: number,
-  mediaType: MediaType
+  mediaType: MediaType,
+  force = false
 ): Promise<PlatformSyncResult> {
-  const lastSync = await getLastSyncTime(slug, mediaType);
-  if (lastSync && Date.now() - lastSync.getTime() < CATALOG_SYNC_COOLDOWN_MS) {
-    return { count: 0, skipped: true, reason: "cooldown", callsUsed: 0 };
+  if (!force) {
+    const lastSync = await getLastSyncTime(slug, mediaType);
+    if (lastSync && Date.now() - lastSync.getTime() < CATALOG_SYNC_COOLDOWN_MS) {
+      return { count: 0, skipped: true, reason: "cooldown", callsUsed: 0 };
+    }
   }
 
   try {
@@ -266,6 +272,7 @@ export async function POST(request: Request) {
 
   const url = new URL(request.url);
   const onlySlug = url.searchParams.get("slug");
+  const force = url.searchParams.get("force") === "true";
   // Default: movies only (safer; use ?type=tv or ?type=all explicitly)
   const typeParam = url.searchParams.get("type") ?? "movie";
   const syncMovies = typeParam === "movie" || typeParam === "all";
@@ -290,7 +297,7 @@ export async function POST(request: Request) {
   if (syncMovies) {
     for (const [slug, serviceId] of motnEntries) {
       motnJobs.push(async () => {
-        const r = await syncMoTNPlatform(slug, serviceId!, "movie", budgetRemaining);
+        const r = await syncMoTNPlatform(slug, serviceId!, "movie", budgetRemaining, force);
         results[`${slug}:movie`] = { ...r, source: "motn" };
         if (!r.skipped) { totalCallsUsed += r.callsUsed; budgetRemaining -= r.callsUsed; }
       });
@@ -299,7 +306,7 @@ export async function POST(request: Request) {
   if (syncTV) {
     for (const [slug, serviceId] of motnEntries) {
       motnJobs.push(async () => {
-        const r = await syncMoTNPlatform(slug, serviceId!, "tv", budgetRemaining);
+        const r = await syncMoTNPlatform(slug, serviceId!, "tv", budgetRemaining, force);
         results[`${slug}:tv`] = { ...r, source: "motn" };
         if (!r.skipped) { totalCallsUsed += r.callsUsed; budgetRemaining -= r.callsUsed; }
       });
@@ -310,11 +317,11 @@ export async function POST(request: Request) {
   // Watchmode: sequential (low volume, no quota concern)
   for (const [slug, sourceId] of watchmodeEntries) {
     if (syncMovies) {
-      const r = await syncWatchmodePlatform(slug, sourceId!, "movie");
+      const r = await syncWatchmodePlatform(slug, sourceId!, "movie", force);
       results[`${slug}:movie`] = { ...r, source: "watchmode" };
     }
     if (syncTV) {
-      const r = await syncWatchmodePlatform(slug, sourceId!, "tv");
+      const r = await syncWatchmodePlatform(slug, sourceId!, "tv", force);
       results[`${slug}:tv`] = { ...r, source: "watchmode" };
     }
   }
