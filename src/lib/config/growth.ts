@@ -11,21 +11,24 @@ export const GROWTH_SUBREDDITS = [
 ] as const;
 
 export const GROWTH_KEYWORDS = [
-  // Competitor signals
-  "trakt alternative",
-  "trakt too expensive",
-  "justwatch alternative",
-  "justwatch ads",
+  // Competitor mentions (any mention is relevant)
+  "trakt",
+  "justwatch",
   // Discovery / recommendation requests
   "what to watch",
   "what should i watch",
-  "looking for recommendations",
   "something to watch",
-  "recommend something to watch",
-  "streaming recommendation",
-  "streaming app recommendation",
-  // Streaming frustration
-  "streaming alternatives",
+  "any recommendations",
+  "any suggestions",
+  "recommend me",
+  "looking for a show",
+  "looking for something to watch",
+  "need something to watch",
+  "suggest something",
+  // Streaming frustration / switching
+  "streaming alternative",
+  "cancel trakt",
+  "trakt price",
 ] as const;
 
 /** Minimum Reddit post score (upvotes) to store as an opportunity. */
