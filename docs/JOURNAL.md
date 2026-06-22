@@ -120,11 +120,13 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 
 ### Next actions
 
-1. Check BustedBoardBot comment karma in 24-48 hrs
-2. Post Sam's personal intro post in r/trakt once bot has karma
-3. Set up auto-reload on AI Studio billing
-4. Domain registration (bustedboard.com) when ready
-5. Sentry error tracking before any major traffic
+1. Check BustedBoardBot karma in 24-48 hrs (reddit.com/u/BustedBoardBot)
+2. Continue helpful-only comments in r/trakt until ~10 karma
+3. Once karma ≥ 10: post Sam's personal r/trakt intro post (draft in `docs/REDDIT-OUTREACH.md`)
+4. Week 2: expand to r/television weekly thread + Hacker News Show HN (drafts in `docs/REDDIT-OUTREACH.md`)
+5. Set up auto-reload on AI Studio billing
+6. Domain registration (bustedboard.com) when ready
+7. Sentry error tracking before any major traffic
 
 ---
 
