@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "fs";
 
 const securityHeaders = [
   { key: "X-Frame-Options",           value: "DENY" },
@@ -15,10 +16,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_DATE: new Date().toISOString(),
     NEXT_PUBLIC_BUILD_COMMIT: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
-    // Increments every ~35 hours from 2026-01-01; calibrated to match commit count (~118) on 2026-06-22.
-    NEXT_PUBLIC_BUILD_NUMBER: String(
-      Math.floor((Date.now() - new Date("2026-01-01").getTime()) / (1000 * 60 * 60 * 35))
-    ),
+    NEXT_PUBLIC_BUILD_NUMBER: readFileSync("build-number.txt", "utf8").trim(),
   },
 };
 

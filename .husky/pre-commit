@@ -1,3 +1,10 @@
+# Auto-increment build number on every commit.
+BUILD_FILE="build-number.txt"
+CURRENT=$(cat "$BUILD_FILE" | tr -d '[:space:]')
+NEXT=$((CURRENT + 1))
+echo "$NEXT" > "$BUILD_FILE"
+git add "$BUILD_FILE"
+
 # Lint staged TS/TSX. ESLint exits non-zero only on errors, so the file-length
 # and no-magic-numbers gates block the commit; pre-existing warnings don't.
 npx lint-staged || exit 1
