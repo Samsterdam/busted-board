@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { MS_PER_DAY, MS_PER_HOUR } from "@/lib/config/durations";
@@ -92,6 +93,14 @@ export function AdminSection() {
         Admin
       </h2>
       <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+        <Link
+          href="/admin/growth"
+          className="flex items-center justify-between rounded-lg border border-border/50 p-3 text-sm font-medium hover:bg-muted/50 transition-colors"
+        >
+          Growth Dashboard
+          <span className="text-muted-foreground text-xs">→</span>
+        </Link>
+
         <div>
           <p className="text-sm font-medium mb-2">Sync Streaming Catalog</p>
           <div className="flex justify-between text-xs mb-1">
