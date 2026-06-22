@@ -5,7 +5,7 @@ what's next, and any decisions made. Keep entries terse.
 
 ---
 
-## NEXT SESSION — START HERE (last updated 2026-06-22)
+## NEXT SESSION — START HERE (last updated 2026-06-22 session 32)
 
 Complete ordered checklist. Top = highest priority / blocking.
 
@@ -13,7 +13,7 @@ Complete ordered checklist. Top = highest priority / blocking.
 
 1. **Vercel Pro upgrade** — vercel.com/account/billing. Hobby plan prohibits commercial use; Stripe payments make this mandatory ($20/mo). Defer until Stripe is ready.
 2. **Stripe setup** — launching free-first (beta), so defer Stripe until after initial user feedback. When ready: stripe.com → 2 products ($3/mo, $25/yr) → 5 env vars in Vercel → webhook. See session 21 entry for step-by-step.
-3. ~~**Reddit app**~~ — applied for Reddit API access 2026-06-22; reCAPTCHA blocked app creation in browser. Scanner now uses public `/new.json` listing API (no OAuth needed for reads). OAuth still needed for posting comments — revisit when Reddit approves access.
+3. ~~**Reddit scanner**~~ — fully working via ScrapeCreators API (Reddit killed `.json` endpoints May 2026; OAuth registration broken). Needs `SCRAPECREATORS_API_KEY` in Vercel env (already set). Posting comments still not automated — ScrapeCreators is read-only; drafts must be posted manually.
 4. ~~**GitHub Actions secrets**~~ — `APP_URL` + `GROWTH_ADMIN_SECRET` both set ✓
 5. ~~**Fix `DELETE /api/user` bug**~~ — fixed ✓ (`communityLinks` + `communityLinkFlags` now deleted; Stripe cancellation TODO comment added for when Stripe goes live)
 
@@ -25,7 +25,7 @@ Complete ordered checklist. Top = highest priority / blocking.
 - **Custom domain** — `bustedboard.com` (~$12/yr). Update `APP_URL` in `src/lib/config/app.ts` after adding to Vercel
 - **Google Search Console** — add property, submit `/sitemap.xml`. Do after domain is live
 - **Sentry + PostHog** — `@sentry/nextjs` for errors + PostHog for product funnels/session replay. Install before any GTM push. 12 specific events to instrument — plan file missing; reconstruct from session 27 journal entry.
-- **Verify Reddit scan works** — check Vercel function logs after clicking "Scan Reddit" on `/admin/growth`. If still "0 new, 0 skipped", Reddit is blocking Vercel IPs for `/new.json` too → fallback: RSS feeds (`www.reddit.com/r/{subreddit}/new.rss`).
+- ~~**Verify Reddit scan works**~~ — working ✓ via ScrapeCreators. Opportunities surfacing in Growth Dashboard.
 
 ### Marketing (phase 1 — 0→100 users)
 
@@ -47,6 +47,31 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 - **UK first** (~10–20 hrs engineering): Add BBC iPlayer/ITVX/All 4 TMDB provider IDs to `src/lib/platforms.ts`; parameterize `language` in `src/lib/tmdb.ts`; £40 ICO registration
 - **Before South Korea**: verify Watchmode API Korean coverage (`GET /sources/?regions=KR`) — if Wavve/TVING missing, core streaming-filter feature is broken
 - **Before Brazil**: check Globoplay Watchmode coverage (`GET /sources/?regions=BR`) — Amazon.com.br affiliate pays $0 on streaming, use Globoplay CPA instead
+
+---
+
+## 2026-06-22 (session 32 — Growth Dashboard fixes + Reddit scanner via ScrapeCreators)
+
+### Done
+
+- **Growth Dashboard nav** — added link to `/admin/growth` from Settings admin section (was only accessible via direct URL)
+- **Scan button auth** — `/api/admin/growth/scan` was requiring a Bearer token the browser never sent; now accepts admin session OR Bearer token
+- **Reddit API dead** — Reddit killed public `.json` endpoints May 2026; OAuth app registration broken (reCAPTCHA infinite loop, script grant deprecated). Switched scanner to ScrapeCreators API (read-only, 100 free credits). Set `SCRAPECREATORS_API_KEY` in Vercel.
+- **Keyword broadening** — original multi-word phrases never matched real posts; expanded to include "trakt", "justwatch", "any recommendations", "something to watch", etc. Scanner now surfaces real opportunities.
+- **Error visibility** — scan result now shows per-subreddit errors + fetched count for diagnostics
+- **Auto-draft on open** — "Draft response" now immediately calls Gemini; no manual direction needed to start
+- **Draft prompt tuning** — shorter, human-sounding replies; bot discloses it's BustedBoardBot; always mentions Busted Board for relevant posts; banned "check the forums" filler; requires specific actionable advice
+- **Draft route timeout** — extended to 60s (`export const maxDuration = 60`) to prevent Vercel timeout on Gemini calls
+- **Build info on dashboard** — commit hash + formatted local time shown under Growth Dashboard title
+- **Build number** — auto-increments via pre-commit hook (`build-number.txt`); reads into `NEXT_PUBLIC_BUILD_NUMBER` at build time. Currently at 119.
+- **Scroll fix** — Growth Dashboard was cut off by bottom nav; added `pb-24`
+- **Catalog enrichment** — committed leftover changes from prior session: `enrichCatalogData()` now fetches both poster + overview from TMDB (was poster-only)
+
+### Next actions
+
+1. Manual posting workflow — "Post to Reddit" button currently throws (ScrapeCreators is read-only). For now: copy draft text, post manually as BustedBoardBot. Consider adding clipboard-copy button.
+2. OG image (Canva, ~10 min) — needed before social push
+3. Paid AI Studio key — before Reddit community posts go live
 
 ---
 
