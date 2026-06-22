@@ -203,6 +203,8 @@ export default function SettingsPage() {
           <Link href="/privacy" className="underline hover:text-foreground transition-colors">Privacy Policy</Link>
           {" · "}
           <Link href="/terms" className="underline hover:text-foreground transition-colors">Terms of Service</Link>
+          {" · "}
+          <a href="mailto:bustedboarddmca@gmail.com" className="underline hover:text-foreground transition-colors">DMCA</a>
         </p>
         <p className="text-center text-xs text-muted-foreground/50 pt-1">
           {process.env.NEXT_PUBLIC_BUILD_COMMIT} · {new Date(process.env.NEXT_PUBLIC_BUILD_DATE ?? "").toLocaleString()}

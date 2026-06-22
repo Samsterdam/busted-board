@@ -5,7 +5,8 @@ export const metadata = {
   description: "How Busted Board collects, uses, and protects your information.",
 };
 
-const LAST_UPDATED = "June 14, 2026";
+const LAST_UPDATED = "June 22, 2026";
+const DMCA_EMAIL = "bustedboarddmca@gmail.com";
 
 const CONTACT_FORM_URL =
   "https://docs.google.com/forms/d/101tTiA5tvVENwvAxU-JJBDu89NIY4KJdN1TRArPEa2w/viewform";
@@ -200,7 +201,26 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="9. Contact">
+        <Section title="9. DMCA / Copyright takedowns">
+          <p>
+            Busted Board respects intellectual property rights. If you believe content on this
+            site infringes your copyright, send a written notice to:
+          </p>
+          <p className="mt-2 font-medium text-foreground">
+            <a href={`mailto:${DMCA_EMAIL}`} className="underline hover:opacity-80">
+              {DMCA_EMAIL}
+            </a>
+          </p>
+          <p className="mt-2">
+            Your notice must include: (1) identification of the copyrighted work; (2)
+            identification of the infringing material and its location on our site; (3) your
+            contact information; (4) a statement of good faith belief that the use is not
+            authorised; (5) a statement of accuracy under penalty of perjury; and (6) your
+            signature (electronic or physical).
+          </p>
+        </Section>
+
+        <Section title="10. Contact">
           <p>
             For privacy-related questions or to exercise your rights, use our{" "}
             <a href={CONTACT_FORM_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
