@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import { execSync } from "child_process";
 
 const securityHeaders = [
   { key: "X-Frame-Options",           value: "DENY" },
@@ -16,10 +15,6 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_DATE: new Date().toISOString(),
     NEXT_PUBLIC_BUILD_COMMIT: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
-    NEXT_PUBLIC_BUILD_NUMBER: (() => {
-      try { return execSync("git rev-list --count HEAD").toString().trim(); }
-      catch { return "?"; }
-    })(),
   },
 };
 
