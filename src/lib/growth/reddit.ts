@@ -33,6 +33,7 @@ export async function fetchNewPosts(
   return data.posts.slice(0, limit);
 }
 
-export async function postComment(): Promise<string> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function postComment(_threadId: string, _text: string): Promise<string> {
   throw new Error("Reddit comment posting is not yet supported via ScrapeCreators (read-only).");
 }
