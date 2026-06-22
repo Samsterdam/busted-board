@@ -13,6 +13,20 @@ export const metadata: Metadata = {
   description: "Find something great to watch based on your taste and streaming services.",
   manifest: "/manifest.json",
   metadataBase: new URL("https://busted-board.vercel.app"),
+  openGraph: {
+    title: "Busted Board",
+    description: "AI recommendations. No sponsored results.",
+    url: "https://busted-board.vercel.app",
+    siteName: "Busted Board",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "Busted Board" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Busted Board",
+    description: "AI recommendations. No sponsored results.",
+    images: ["/og-default.png"],
+  },
   other: {
     "probely-verification": "010c2f8b-25c5-4701-8338-ce627a92019c",
   },
