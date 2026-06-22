@@ -10,6 +10,7 @@ import {
   GROWTH_MAX_THREAD_AGE_HOURS,
   GROWTH_SEARCH_LIMIT,
   GROWTH_MAX_BODY_LENGTH,
+  GROWTH_SEARCH_DELAY_MS,
 } from "@/lib/config/growth";
 import { MS_PER_HOUR, MS_PER_SECOND } from "@/lib/config/durations";
 
@@ -31,6 +32,7 @@ export async function runScanner(): Promise<{ inserted: number; skipped: number 
       } catch {
         continue;
       }
+      await new Promise((r) => setTimeout(r, GROWTH_SEARCH_DELAY_MS));
 
       for (const thread of threads) {
         const ageMs = Date.now() - thread.created_utc * MS_PER_SECOND;

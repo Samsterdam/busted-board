@@ -11,10 +11,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!env.REDDIT_CLIENT_ID) {
-    return Response.json({ error: "Reddit credentials not configured" }, { status: 503 });
-  }
-
   try {
     const result = await runScanner();
     return Response.json(result);

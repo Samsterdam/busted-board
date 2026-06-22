@@ -2,8 +2,10 @@ import { env } from "@/lib/env";
 import { MS_PER_MINUTE, MS_PER_SECOND } from "@/lib/config/durations";
 
 const REDDIT_TOKEN_URL = "https://www.reddit.com/api/v1/access_token";
+const REDDIT_PUBLIC_BASE = "https://www.reddit.com";
 const REDDIT_OAUTH_BASE = "https://oauth.reddit.com";
-const USER_AGENT = "BustedBoard/1.0 (growth automation; operated by account owner)";
+// Reddit requires a descriptive User-Agent; generic browser UAs get rate-limited.
+const USER_AGENT = "script:BustedBoard:1.0 (by /u/Samsterdam)";
 
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
@@ -51,18 +53,6 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.value;
 }
 
-async function redditFetch(path: string): Promise<unknown> {
-  const token = await getAccessToken();
-  const res = await fetch(`${REDDIT_OAUTH_BASE}${path}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "User-Agent": USER_AGENT,
-    },
-  });
-  if (!res.ok) throw new Error(`Reddit API error ${res.status} for ${path}`);
-  return res.json();
-}
-
 async function redditPost(path: string, body: Record<string, string>): Promise<unknown> {
   const token = await getAccessToken();
   const res = await fetch(`${REDDIT_OAUTH_BASE}${path}`, {
@@ -103,9 +93,12 @@ export async function searchSubreddit(
     t: "week",
   });
 
-  const data = (await redditFetch(
-    `/r/${subreddit}/search?${params}`
-  )) as { data: { children: { data: RedditThread }[] } };
+  // Use the unauthenticated public API — no OAuth app required for reads.
+  const res = await fetch(`${REDDIT_PUBLIC_BASE}/r/${subreddit}/search.json?${params}`, {
+    headers: { "User-Agent": USER_AGENT },
+  });
+  if (!res.ok) throw new Error(`Reddit search error ${res.status} for r/${subreddit}`);
+  const data = (await res.json()) as { data: { children: { data: RedditThread }[] } };
 
   return data.data.children.map((c) => c.data);
 }
