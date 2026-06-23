@@ -130,9 +130,16 @@ secondChance rendering preserved as left by the other session.
 Verified: **tsc ✓, lint ✓ (tree-wide), build ✓** (`/watched` dynamic). Live
 click-through still pending (needs a logged-in session).
 
-**Commit:** whole feature in one commit (both sessions' files + migrations
-0010/0011), per Sam's commit-ownership call. Pending Sam's go on push (push →
-live Vercel deploy).
+**Commit:** whole feature in one commit `adb1151` (both sessions' files +
+migrations 0010/0011), per Sam's commit-ownership call. Pushed to master; CI
+green (typecheck, lint, migration-drift, test, build, secret-scan).
+
+**Prod migration APPLIED** (2026-06-23 ~09:45): ran `db:migrate` against Neon via
+`.env.local` → 0010 + 0011 applied successfully. Gotcha confirmed: this repo has
+**no automated migration step** (build = `next build`, no vercel.json, CI only
+drift-checks). Schema-changing deploys REQUIRE a manual `npm run db:migrate`
+against Neon or the live page 500s on the missing column. Watch for this on every
+future migration.
 
 **Lesson (again): isolate parallel sessions in worktrees.** Same-tree concurrency
 churned `.tsx` files mid-edit. See global CLAUDE.md parallel-sessions rule.
