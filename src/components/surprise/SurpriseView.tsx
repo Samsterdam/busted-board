@@ -86,12 +86,18 @@ export function SurpriseView() {
     setPool((prev) => prev.filter((item) => item.tmdbId !== tmdbId));
   }
 
-  async function handleDismiss(item: FeedItem) {
+  async function handleDismiss(item: FeedItem, secondChance: boolean) {
     removeFromPool(item.tmdbId);
     await fetch("/api/feed/dismiss", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tmdbId: item.tmdbId, tmdbType: item.tmdbType }),
+      body: JSON.stringify({
+        tmdbId: item.tmdbId,
+        tmdbType: item.tmdbType,
+        title: item.title,
+        posterPath: item.posterUrl,
+        secondChance,
+      }),
     }).catch(() => null);
   }
 
@@ -184,7 +190,7 @@ export function SurpriseView() {
             inWatchlist={watchlistIds.has(item.tmdbId)}
             inWatched={watchedIds.has(item.tmdbId)}
             onRate={() => setRateTarget(item)}
-            onDismiss={() => handleDismiss(item)}
+            onDismiss={(secondChance) => handleDismiss(item, secondChance)}
             onWatchlist={() => handleWatchlist(item)}
             onWatched={() => handleWatched(item)}
             onThumbsUp={() => handleThumbsUp(item)}

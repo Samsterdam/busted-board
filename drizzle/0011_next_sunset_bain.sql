@@ -1,0 +1,1 @@
+ALTER TABLE "dismissed_items" ADD COLUMN "second_chance" boolean DEFAULT false;

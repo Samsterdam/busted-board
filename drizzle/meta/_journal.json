@@ -71,6 +71,20 @@
       "when": 1782157742528,
       "tag": "0009_nostalgic_sharon_ventura",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782219762037,
+      "tag": "0010_clammy_winter_soldier",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782220207408,
+      "tag": "0011_next_sunset_bain",
+      "breakpoints": true
     }
   ]
 }

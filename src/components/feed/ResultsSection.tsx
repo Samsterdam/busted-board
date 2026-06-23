@@ -14,7 +14,7 @@ interface Props {
   watchedIds: Set<number>;
   onItemClick: (item: FeedItem) => void;
   onRate: (item: FeedItem) => void;
-  onDismiss: (item: FeedItem) => void;
+  onDismiss: (item: FeedItem, secondChance: boolean) => void;
   onWatchlist: (item: FeedItem) => void;
   onWatched: (item: FeedItem) => void;
   onThumbsUp: (item: FeedItem) => void;
@@ -55,7 +55,7 @@ export function ResultsSection({
               inWatched={watchedIds.has(item.tmdbId)}
               onClick={() => onItemClick(item)}
               onRate={() => onRate(item)}
-              onDismiss={() => onDismiss(item)}
+              onDismiss={(secondChance) => onDismiss(item, secondChance)}
               onWatchlist={() => onWatchlist(item)}
               onWatched={() => onWatched(item)}
               onThumbsUp={() => onThumbsUp(item)}

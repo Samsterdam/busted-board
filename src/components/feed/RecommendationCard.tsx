@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { X, Bookmark, BookmarkCheck, Eye, ThumbsUp } from "lucide-react";
+import { X, Bookmark, BookmarkCheck, Eye, ThumbsUp, Ban, Clock } from "lucide-react";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { CinemaScoreBadge, ThreeScoreRow } from "./ScoreDisplay";
@@ -13,7 +14,8 @@ interface Props {
   inWatchlist?: boolean;
   inWatched?: boolean;
   onRate: () => void;
-  onDismiss: () => void;
+  // secondChance=true means "not now, maybe later" (soft); false means a hard no.
+  onDismiss: (secondChance: boolean) => void;
   onWatchlist: () => void;
   onWatched: () => void;
   onThumbsUp: () => void;
@@ -32,6 +34,8 @@ export function RecommendationCard({
   onThumbsUp,
   onClick,
 }: Props) {
+  const [choosingDismiss, setChoosingDismiss] = useState(false);
+
   return (
     <div className="group relative flex flex-col rounded-xl border border-border bg-card overflow-hidden transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-black/40">
       {/* Poster */}
@@ -66,13 +70,13 @@ export function RecommendationCard({
         <Tooltip>
           <TooltipTrigger
             type="button"
-            onClick={onDismiss}
+            onClick={() => setChoosingDismiss(true)}
             className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-900/80 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label={`Hide ${item.title} from feed`}
+            aria-label={`Not interested in ${item.title}`}
           >
             <X className="h-3 w-3" aria-hidden="true" />
           </TooltipTrigger>
-          <TooltipContent side="left">Hide from feed</TooltipContent>
+          <TooltipContent side="left">Not interested</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -111,6 +115,40 @@ export function RecommendationCard({
           <TooltipContent side="left">Like this</TooltipContent>
         </Tooltip>
       </div>
+
+      {/* Dismiss choice — soft ("maybe later") vs hard ("not for me"). Both
+          remove the title from the feed; soft ones are flagged for a second
+          chance in the Not Interested list. */}
+      {choosingDismiss && (
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-stretch justify-center gap-2 bg-black/85 p-3 text-center"
+          role="dialog"
+          aria-label={`Not interested in ${item.title}`}
+        >
+          <p className="text-xs font-medium text-white">Not interested?</p>
+          <button
+            type="button"
+            onClick={() => { setChoosingDismiss(false); onDismiss(true); }}
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-amber-600/90 px-2 py-1.5 text-xs font-medium text-white hover:bg-amber-600 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <Clock className="h-3.5 w-3.5" aria-hidden="true" /> Maybe later
+          </button>
+          <button
+            type="button"
+            onClick={() => { setChoosingDismiss(false); onDismiss(false); }}
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-red-900/90 px-2 py-1.5 text-xs font-medium text-white hover:bg-red-900 transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <Ban className="h-3.5 w-3.5" aria-hidden="true" /> Not for me
+          </button>
+          <button
+            type="button"
+            onClick={() => setChoosingDismiss(false)}
+            className="text-[11px] text-white/70 hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Info */}
       <div className="flex flex-col gap-1.5 p-2">

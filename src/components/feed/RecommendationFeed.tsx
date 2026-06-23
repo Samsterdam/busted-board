@@ -137,14 +137,14 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
-  async function handleDismiss(item: FeedItem) {
-    posthog.capture(EVENTS.MOVIE_DISMISSED, { tmdbId: item.tmdbId, title: item.title });
+  async function handleDismiss(item: FeedItem, secondChance: boolean) {
+    posthog.capture(EVENTS.MOVIE_DISMISSED, { tmdbId: item.tmdbId, title: item.title, secondChance });
     setFeed((f) => f.filter((i) => i.tmdbId !== item.tmdbId));
     setDiscovery((d) => d.filter((i) => i.tmdbId !== item.tmdbId));
     await fetch("/api/feed/dismiss", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tmdbId: item.tmdbId, tmdbType: item.tmdbType }),
+      body: JSON.stringify({ tmdbId: item.tmdbId, tmdbType: item.tmdbType, title: item.title, posterPath: item.posterUrl, secondChance }),
     }).catch(() => null);
   }
 
@@ -313,7 +313,7 @@ export function RecommendationFeed({ ratingCount, platforms }: Props) {
                   inWatched={watchedIds.has(item.tmdbId)}
                   onClick={() => { posthog.capture(EVENTS.MOVIE_DETAIL_OPENED, { tmdbId: item.tmdbId, title: item.title, mediaType: item.tmdbType }); setSelectedItem(item); }}
                   onRate={() => setSelectedItem(item)}
-                  onDismiss={() => handleDismiss(item)}
+                  onDismiss={(secondChance) => handleDismiss(item, secondChance)}
                   onWatchlist={() => handleWatchlist(item)}
                   onWatched={() => handleWatched(item)}
                   onThumbsUp={() => handleThumbsUp(item)}

@@ -50,6 +50,95 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 
 ---
 
+## 2026-06-23 (session 35 — Watched-page rework, PARALLEL SESSION SPLIT)
+
+Two Claude sessions ran concurrently in the same working tree (not isolated in
+worktrees). Documenting the boundary so neither clobbers the other.
+
+### Also done this session
+- **CI build fix** (committed `27611c5`): removed obsolete `hideSourceMaps` from
+  `withSentryConfig` in `next.config.ts` — removed in Sentry SDK v8+ (on v10.59),
+  hidden/deleted source maps are now default. Was red-failing the typecheck gate.
+
+### In flight — `/watched` reframed into 3 intent buckets (this session)
+Confusion being fixed: tabs "Watched" (rated) vs "Seen" (unrated) read as
+synonyms. New model = intent, not data source:
+- **Want to Watch** ← `watchlist`
+- **Watched** ← merge of `ratings` + `watched` (rating = optional metadata)
+- **Not Interested** ← `dismissedItems` (now user-facing, not just a feed filter)
+
+Plan: `.claude/plans/reflective-jingling-porcupine.md`.
+
+Net-new files written (no conflict, mine to finish):
+- `src/lib/config/images.ts` — `posterSrc()` (also fixes latent double-prefix bug:
+  feed-marked items stored a full URL, list re-prefixed `w92`)
+- `src/lib/watched/merge-watched.ts` — dedupes `ratings`+`watched` by (tmdbId,type)
+- `src/components/watched/{MediaRow,WatchlistList,NotInterestedList}.tsx`
+- `src/app/(app)/watched/page.tsx` — query fetches dismissed (title-not-null) + merges
+- migration `drizzle/0010_clammy_winter_soldier.sql` (dismissed_items title/poster)
+- **STILL TO WRITE:** `WatchedTabs.tsx` (shell) + `WatchedList.tsx` (merged list)
+
+### Parallel session — `secondChance` dismissal feature (other agent)
+Owns shared files: `schema.ts` (`dismissed_items.second_chance`),
+`api/feed/dismiss/route.ts` (secondChance in POST), `RecommendationCard.tsx`
+(`onDismiss: (secondChance: boolean) => void`), `RecommendationFeed.tsx`
+(`handleDismiss(item, secondChance)`), migration `0011_next_sunset_bain.sql`.
+
+Integration contract (must hold for my Not Interested list):
+1. dismiss POST persists `title` + `posterPath`; 2. DELETE `/api/feed/dismiss`
+exists (un-dismiss). Both currently present.
+
+Known breakage to fix before commit: `RecommendationCard.tsx` X button still does
+`onClick={onDismiss}` (passes MouseEvent as the boolean); `Ban`/`Clock` imported
+but unused → lint error. Needs the hard-no / maybe-later two-affordance UI.
+
+**✅ STATUS 2026-06-23 09:23 — secondChance session is DONE.** Feed-side complete,
+tsc + eslint clean on all my files. Safe for you to proceed with `WatchedTabs`/
+`WatchedList`. Read the scope + commit notes below before you commit.
+
+**UPDATE (secondChance session, later 2026-06-23 — RESOLVED + scope note):**
+
+- The "known breakage" above is fixed. `RecommendationCard` X now opens a 2-choice
+  overlay (`Clock` "Maybe later" → `onDismiss(true)`, `Ban` "Not for me" →
+  `onDismiss(false)`); `onDismiss: (secondChance: boolean) => void` threaded through
+  `ResultsSection` → `RecommendationFeed`/`SurpriseView`. tsc + eslint clean on all
+  feed-side files. dismiss POST now `onConflictDoUpdate`s `second_chance` (re-dismiss
+  updates the flag). `MOVIE_DISMISSED` analytics gained a `secondChance` prop.
+- **⚠️ I edited `NotInterestedList.tsx` (your net-new file)** — additive, Sam-approved:
+  added `secondChance` to `DismissedItem`, sort second-chance first, "Maybe later"
+  badge, and a `RotateCcw` "Give it a chance" action (vs `Trash2` for hard nos).
+  **Preserve this when you finish the watched wiring** — don't overwrite the
+  secondChance rendering. The page query already full-selects the column, so wiring
+  `<NotInterestedList items={dismissed} />` lights it up automatically.
+- The ONLY remaining typecheck error is yours: `page.tsx:31` → `WatchedTabs` still has
+  the old `Rated[]`/`seenItems` props. Resolves when you land `WatchedTabs`/`WatchedList`.
+- Nothing staged/committed by me (shared tree).
+- **Commit ownership (per Sam): YOU commit the whole feature** — incl. my shared
+  files + migrations 0010/0011 — once `WatchedTabs` lands. I will NOT commit, so
+  don't wait on a shared-files commit from me (overrides the "other session commits
+  first" line above; the tree's too entangled to split cleanly).
+
+Migrations 0010 + 0011 are sequential and both valid — do NOT renumber/squash.
+
+### Code-complete (watched session, end of 2026-06-23)
+`WatchedTabs.tsx` (102 lines, was 314) + `WatchedList.tsx` landed. `WatchedList`
+merges rated+seen; unrated rows have an inline Rate that promotes in place; trash
+deletes from both `watched` and `ratings`. `RateModal.onSaved` gained an optional
+`id` 3rd arg (POST already returned it) so inline rates update without refetch —
+backward-compatible, SurpriseView caller unaffected. `NotInterestedList`
+secondChance rendering preserved as left by the other session.
+Verified: **tsc ✓, lint ✓ (tree-wide), build ✓** (`/watched` dynamic). Live
+click-through still pending (needs a logged-in session).
+
+**Commit:** whole feature in one commit (both sessions' files + migrations
+0010/0011), per Sam's commit-ownership call. Pending Sam's go on push (push →
+live Vercel deploy).
+
+**Lesson (again): isolate parallel sessions in worktrees.** Same-tree concurrency
+churned `.tsx` files mid-edit. See global CLAUDE.md parallel-sessions rule.
+
+---
+
 ## 2026-06-22 (session 34g — journal close)
 
 ### Done this session (34c–34g)

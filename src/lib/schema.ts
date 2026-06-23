@@ -108,6 +108,15 @@ export const dismissedItems = pgTable(
       .references(() => users.id),
     tmdbId: integer("tmdb_id").notNull(),
     tmdbType: text("tmdb_type").notNull(),
+    // Nullable: pre-existing dismissals predate these columns. They still
+    // filter the feed, but only rows with a title render in the "Not
+    // Interested" list on /watched.
+    title: text("title"),
+    posterPath: text("poster_path"),
+    // Soft dismissal: the user said "not now, maybe later" rather than a hard
+    // no. Still filtered out of the feed, but flagged in the Not Interested
+    // list as a candidate to give a second chance.
+    secondChance: boolean("second_chance").default(false),
     dismissedAt: timestamp("dismissed_at").defaultNow(),
   },
   (t) => [unique("dismissed_user_media_unique").on(t.userId, t.tmdbId, t.tmdbType)]

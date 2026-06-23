@@ -19,7 +19,9 @@ interface Props {
   initialRating?: number;
   initialNotes?: string;
   onClose: () => void;
-  onSaved: (rating: number, notes: string) => void;
+  // `id` is the rating row's id returned by the API — lets callers update an
+  // entry in place (e.g. a freshly-rated "seen" item) without a refetch.
+  onSaved: (rating: number, notes: string, id?: number) => void;
 }
 
 interface SearchResult {
@@ -78,7 +80,7 @@ export function RateModal({
     if (!selected || rating === 0) return;
     setSaving(true);
     try {
-      await fetch("/api/ratings", {
+      const res = await fetch("/api/ratings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -90,8 +92,9 @@ export function RateModal({
           notes: notes || null,
         }),
       });
+      const data = (await res.json().catch(() => ({}))) as { id?: number };
       toast.success("Rating saved!");
-      onSaved(rating, notes);
+      onSaved(rating, notes, data.id);
     } catch {
       toast.error("Could not save.");
     } finally {
