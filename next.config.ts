@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(nextConfig, {
   silent: true,
-  hideSourceMaps: true,
+  // Source maps are uploaded then deleted from the build by default
+  // (deleteSourcemapsAfterUpload), so the old `hideSourceMaps` option
+  // was removed in Sentry SDK v8+.
   disableLogger: true,
 });
