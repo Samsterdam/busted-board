@@ -9,6 +9,7 @@ import { StarRating } from "@/components/ratings/StarRating";
 import { CinemaScoreBadge, ThreeScoreRow } from "./ScoreDisplay";
 import { RibbonBadge } from "./RibbonBadge";
 import { CommunityLinkSubmitForm } from "./CommunityLinkSubmitForm";
+import { FranchiseSection } from "./FranchiseSection";
 import { SuggestPlatformForm } from "@/components/SuggestPlatformForm";
 import type { FeedItem } from "@/lib/recommendation-engine";
 import { toast } from "sonner";
@@ -166,6 +167,11 @@ export function MovieDetailModal({ item, userRating, inWatchlist, onClose, onWat
             </blockquote>
           ) : (
             <p className="text-sm text-muted-foreground line-clamp-3">{item.overview}</p>
+          )}
+
+          {/* Franchise watch order — movies only (TMDB has no TV collections) */}
+          {item.tmdbType === "movie" && (
+            <FranchiseSection tmdbId={item.tmdbId} currentTmdbId={item.tmdbId} />
           )}
 
           {/* Platforms + Watch button */}

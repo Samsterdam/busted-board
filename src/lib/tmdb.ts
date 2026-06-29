@@ -154,3 +154,41 @@ export async function getMovieCredits(tmdbId: number) {
     cast: Array<{ name: string; order: number }>;
   }>(`/movie/${tmdbId}/credits`);
 }
+
+export interface TmdbCollectionPart {
+  id: number;
+  title: string;
+  release_date: string;
+  poster_path: string | null;
+  overview: string;
+  vote_average: number;
+}
+
+export interface TmdbCollection {
+  id: number;
+  name: string;
+  parts: TmdbCollectionPart[];
+}
+
+// A movie's franchise/collection (its prequels & sequels), sorted in release
+// order so callers can show "where to start". Returns null for standalone films
+// that don't belong to a TMDB collection.
+export async function getMovieCollection(tmdbId: number): Promise<TmdbCollection | null> {
+  const movie = await tmdbFetch<{ belongs_to_collection: { id: number } | null }>(
+    `/movie/${tmdbId}`
+  );
+  if (!movie.belongs_to_collection) return null;
+
+  const collection = await tmdbFetch<TmdbCollection>(
+    `/collection/${movie.belongs_to_collection.id}`
+  );
+
+  // Release order, oldest first. Unreleased parts (no release_date) sort last.
+  const parts = [...(collection.parts ?? [])].sort((a, b) => {
+    if (!a.release_date) return 1;
+    if (!b.release_date) return -1;
+    return a.release_date.localeCompare(b.release_date);
+  });
+
+  return { id: collection.id, name: collection.name, parts };
+}
