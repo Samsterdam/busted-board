@@ -29,6 +29,10 @@ export const YEAR_PREFIX_LENGTH = 4;
 // Infinite scroll — how far before the sentinel (px) to fire the next-page fetch
 export const FEED_SCROLL_PRELOAD_PX = 600;
 
+// Franchise "where to start" section (FranchiseSection)
+export const FRANCHISE_COLLAPSED_PREVIEW_COUNT = 4; // parts shown before "Show all"
+export const FRANCHISE_MIN_PARTS_TO_SHOW = 2;       // below this it isn't a series
+
 // Discovery section (discovery-engine.buildDiscoveryItems)
 export const DISCOVERY_CANDIDATE_LIMIT = 40; // provider lookups per request
 export const DISCOVERY_RESULT_LIMIT = 8;     // max items returned
