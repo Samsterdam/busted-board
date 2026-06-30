@@ -5,7 +5,7 @@ export const metadata = {
   description: "How Busted Board collects, uses, and protects your information.",
 };
 
-const LAST_UPDATED = "June 22, 2026";
+const LAST_UPDATED = "June 29, 2026";
 const DMCA_EMAIL = "bustedboarddmca@gmail.com";
 
 const CONTACT_FORM_URL =
@@ -73,14 +73,19 @@ export default function PrivacyPage() {
             <li>To provide and personalise the recommendation feed.</li>
             <li>To associate your ratings, watchlist, and dismissals with your account.</li>
             <li>
+              To analyse your ratings and rank recommendations using a third-party AI
+              service (see &ldquo;AI &amp; automated processing&rdquo; below).
+            </li>
+            <li>
               To show advertising that supports the site — contextual ads if you decline
               personalisation; interest-based ads if you accept.
             </li>
             <li>To diagnose errors and maintain the service.</li>
           </ul>
           <p className="mt-3 text-sm">
-            We do not use your data for automated decision-making that produces legal or
-            similarly significant effects.
+            Our recommendations are generated automatically, but this processing does not
+            produce legal or similarly significant effects, and no human profiling decisions
+            are made about you.
           </p>
         </Section>
 
@@ -109,14 +114,43 @@ export default function PrivacyPage() {
             </p>
           </Subsection>
 
-          <Subsection title="Ad networks (consent-gated)">
+          <Subsection title="AI & automated processing (Google Gemini)">
             <p>
-              When you accept personalised advertising, scripts from one or more of the
-              following ad networks may be loaded: Google AdSense / Ad Manager, Prebid.js
-              (open-source header-bidding), Amazon Transparent Ad Marketplace, Media.net,
-              Taboola, Outbrain, Ezoic, Mediavine, Raptive, Monumetric, Carbon Ads, and
-              BuySellAds. Each network&rsquo;s own privacy policy governs how they process
-              data. If you decline consent, none of these scripts are loaded.
+              To build your taste profile and rank what appears in your feed, we send your
+              rating history to Google&rsquo;s Gemini API. This includes the titles, release
+              years, your star ratings, any notes you added, and the genres of the movies and
+              shows you have rated. We do <strong>not</strong> send your name, email address,
+              or any other account identifier — the data sent describes your viewing taste, not
+              who you are. Google processes this input to return an analysis and a ranking, and
+              its handling is governed by the{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+              >
+                Google Privacy Policy
+              </a>
+              . This processing is part of providing the recommendation service you signed up
+              for.
+            </p>
+          </Subsection>
+
+          <Subsection title="Product analytics (PostHog)">
+            <p>
+              We use PostHog to understand how the app is used (for example, which features are
+              opened and how recommendations perform). Analytics events are tied to a random
+              account identifier and may include the titles you interact with; they do{" "}
+              <strong>not</strong> include your name or email address. Each network&rsquo;s own
+              privacy policy governs how it processes data.
+            </p>
+          </Subsection>
+
+          <Subsection title="Error monitoring (Sentry)">
+            <p>
+              We use Sentry to capture technical error reports so we can diagnose and fix bugs.
+              These reports describe what went wrong (error messages and the code path) and are
+              used solely to maintain the service.
             </p>
           </Subsection>
 

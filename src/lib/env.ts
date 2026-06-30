@@ -39,3 +39,15 @@ export const env = {
   /** Optional — Bearer token Vercel Cron sends to the /api/health keep-alive route. */
   CRON_SECRET: process.env.CRON_SECRET,
 } as const;
+
+/**
+ * True when running in the production deployment (Vercel prod or a prod build).
+ * Used to fail-closed on security controls that are intentionally relaxed in
+ * local dev — e.g. rate limiting, which is skipped locally but must not be
+ * silently absent in production. `VERCEL_ENV` is "production" only on the
+ * production deployment ("preview"/"development" otherwise); `NODE_ENV` covers
+ * non-Vercel prod builds.
+ */
+export const isProduction =
+  process.env.VERCEL_ENV === "production" ||
+  process.env.NODE_ENV === "production";

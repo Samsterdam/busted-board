@@ -5,7 +5,7 @@ export const metadata = {
   description: "The terms and conditions governing your use of Busted Board.",
 };
 
-const LAST_UPDATED = "June 14, 2026";
+const LAST_UPDATED = "June 29, 2026";
 
 const CONTACT_FORM_URL =
   "https://docs.google.com/forms/d/101tTiA5tvVENwvAxU-JJBDu89NIY4KJdN1TRArPEa2w/viewform";
@@ -33,7 +33,13 @@ export default function TermsPage() {
           <p>
             Busted Board is a movie and TV recommendation web app. It uses your streaming service
             subscriptions, viewing history, and ratings to surface personalised content
-            suggestions. The Service is provided free of charge and is supported by advertising.
+            suggestions. Recommendations are generated with the help of third-party AI services;
+            see our{" "}
+            <Link href="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>{" "}
+            for details on what data is processed. The Service is provided free of charge and is
+            supported by advertising.
           </p>
         </Section>
 
@@ -99,6 +105,10 @@ export default function TermsPage() {
             <li>
               <strong>Google Sign-In</strong> — authentication. Subject to Google&rsquo;s Terms
               of Service.
+            </li>
+            <li>
+              <strong>Google Gemini</strong> — AI analysis of your ratings to generate and rank
+              recommendations. Subject to Google&rsquo;s terms.
             </li>
             <li>
               <strong>Ad networks</strong> — advertising (contextual or personalised depending

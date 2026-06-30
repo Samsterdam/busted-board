@@ -22,6 +22,9 @@ export async function POST(request: Request) {
     const result = await runScanner();
     return Response.json(result);
   } catch (err) {
-    return Response.json({ error: String(err) }, { status: 500 });
+    // Log the detail server-side; return a generic message so internal error
+    // text (DB/driver strings, upstream API responses) never reaches the client.
+    console.error("growth scan failed:", err);
+    return Response.json({ error: "Scan failed" }, { status: 500 });
   }
 }
