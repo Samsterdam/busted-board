@@ -33,3 +33,6 @@ export const TASTE_PROFILE_COOLDOWN_MS = 5 * MS_PER_MINUTE;
 /** Ad-consent cookie lifetime, in seconds (cookie `max-age`) → 1 year. */
 export const CONSENT_MAX_AGE_S =
   DAYS_PER_YEAR * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE;
+/** Keep-alive ping key lifetime in Redis, in seconds → 10 min. The value is
+ *  throwaway; the write itself is the activity that keeps Upstash from archiving. */
+export const KEEPALIVE_TTL_S = 10 * SECONDS_PER_MINUTE;
