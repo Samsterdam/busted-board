@@ -24,6 +24,7 @@ export async function GET(request: Request) {
     .filter((id): id is number => id != null);
 
   const region = user?.country ?? "US";
+  const kidsMode = !!user?.kidsMode;
 
   // Pages 2+: serve from cache when fresh, else build and cache.
   if (page >= 2) {
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
     if (cachedPage) {
       return Response.json({ feed: cachedPage, cached: true, page });
     }
-    const more = await buildMoreFeed(userId, platformTmdbIds, platformSlugs, region, seenIds, page);
+    const more = await buildMoreFeed(userId, platformTmdbIds, platformSlugs, region, seenIds, page, kidsMode);
     await writeCachePage(userId, page, more, cached?.pages ?? {});
     return Response.json({ feed: more, cached: false, page });
   }
@@ -45,8 +46,9 @@ export async function GET(request: Request) {
     }
   }
 
+  // Kids mode is generic (no taste profile), so it doesn't need prior ratings.
   const allRatings = await db.select().from(ratings).where(eq(ratings.userId, userId));
-  if (allRatings.length < 1) return Response.json({ feed: [], needsRatings: true });
+  if (allRatings.length < 1 && !kidsMode) return Response.json({ feed: [], needsRatings: true });
 
   const [profile] = await db.select().from(tasteProfile).where(eq(tasteProfile.userId, userId)).limit(1);
   const parsedProfile = profile?.topThemes ? {
@@ -59,7 +61,7 @@ export async function GET(request: Request) {
   } : null;
 
   try {
-    const feed = await buildFeed(userId, platformTmdbIds, platformSlugs, region, parsedProfile);
+    const feed = await buildFeed(userId, platformTmdbIds, platformSlugs, region, parsedProfile, kidsMode);
     await writeCachePage(userId, 1, feed, {});
     return Response.json({ feed, cached: false });
   } catch (err) {

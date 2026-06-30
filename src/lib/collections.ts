@@ -121,6 +121,7 @@ export const MOVIE_GENRE_IDS: Record<string, number> = {
   Crime: 80,
   Documentary: 99,
   Drama: 18,
+  Family: 10751,
   Fantasy: 14,
   Horror: 27,
   Mystery: 9648,

@@ -50,6 +50,62 @@ Per session 28 research in `docs/INTERNATIONAL-EXPANSION.md`:
 
 ---
 
+## 2026-06-29 (session 36 — Kids Mode, BUILT BUT NOT YET VERIFIED)
+
+Global "Kids Mode" toggle: filters recommendations to family-friendly content.
+Plan: `.claude/plans/bright-squishing-stonebraker.md`.
+
+### Product decisions (locked with user)
+- **Filter basis**: age cert (movies ≤ PG via TMDB `certification.lte`/`_country=US`)
+  AND family genres. TV has NO TMDB cert param → genre-filtered only.
+- **Scope**: gates **Feed + Search + Surprise** (not just feed). Browse / `/top` /
+  detail "similar" still UNFILTERED — this is NOT a parental lock; UI copy says so.
+- **Ranking**: generic (bypass taste profile), sorted by audience score.
+- **Seen filter**: KEPT in kids mode (don't re-suggest watched titles).
+
+### Verified TMDB facts (not assumed)
+- `certification.lte=PG` + `certification_country=US` (uppercase) works as ordered
+  range (G+PG); both params interdependent. `/discover/tv` has no cert param.
+- `/search/multi` has no cert/genre param → kids search is a POST-FETCH genre
+  filter (`isKidSafeByGenre`); cert isn't returned on search results.
+
+### Files written
+- `src/lib/config/kids.ts` — consts + `kidsDiscoverParams()` + `isKidSafeByGenre()`
+- `src/lib/feed-buckets.ts` — extracted `fetchMovieBucket`/`fetchShowBucket`
+  (engine crossed the 500-line hard limit; multi-page fetch lives here)
+- `src/lib/schema.ts` — `users.kids_mode` bool; migration `0012_remarkable_mandarin.sql`
+  **(applied to dev Neon DB; NOT yet applied to prod)**
+- `src/lib/collections.ts` — added `Family: 10751` to movie genre map
+- `recommendation-engine.ts`, `api/user/preferences`, `api/recommendations/{feed,search,surprise}`,
+  `(app)/settings/page.tsx` — threaded `kidsMode`
+- Cache: preferences POST invalidates `feedCache` only when the flag changes.
+
+### Bug found in testing, fix written but UNVERIFIED
+First test → empty feed ("No recommendations found") on a 12-platform account.
+Root cause: buckets fetched only TMDB **page 1** (~top-100 popular kids titles),
+and the test account's 300+ watched/rated/dismissed history had consumed nearly
+all of them → every kid-safe hit already seen → empty. Fix: kids mode now fetches
+`KIDS_BUCKET_PAGES = 5` pages per bucket (`feed-buckets.ts`). Tradeoff: ~40 TMDB
+calls per cold kids-feed build (only once, then cached). Dial to 3 if rate-limited.
+
+### STILL TO DO (start here next session)
+1. **Verify the fix actually works** — never re-tested after the multi-page change.
+   Toggle Kids Mode OFF→Save→ON→Save (stale empty cache only clears on flag change),
+   then confirm feed populates. Watch dev-server logs for TMDB rate-limiting.
+2. Verify search "horror" returns empty; Surprise is kid-safe; new 0-rating account
+   gets a feed; toggling off restores normal mix.
+3. Gates currently GREEN: typecheck, lint, 20/20 tests. Not committed yet.
+4. Branch `feat/franchise-watch-order` — Kids Mode rides on top of the franchise
+   watch-order commit; decide whether to split into its own branch/PR.
+5. On merge to prod: apply migration `0012` to prod DB (user runs `db:migrate`).
+
+### Known limitation deferred
+- Considered keying `feedCache` by `(userId, kidsMode)` instead of invalidating —
+  avoids discarding a good adult feed on every toggle. Needs a `feedCache` schema
+  change; revisit if toggle churn matters.
+
+---
+
 ## 2026-06-23 (session 35 — Watched-page rework, PARALLEL SESSION SPLIT)
 
 Two Claude sessions ran concurrently in the same working tree (not isolated in

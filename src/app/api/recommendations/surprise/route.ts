@@ -8,6 +8,7 @@ import { discoverMovies, discoverShows } from "@/lib/tmdb";
 import { enrichToFeedItems, type DiscoverResult } from "@/lib/feed-enrichment";
 import { genreNamesToIds } from "@/lib/collections";
 import { SURPRISE_POOL_SIZE, SURPRISE_ENRICH_FACTOR } from "@/lib/config/surprise";
+import { kidsDiscoverParams } from "@/lib/config/kids";
 
 const SURPRISE_MIN_VOTES = "50";
 const SURPRISE_MIN_RATING = "6";
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
   }
 
   const region = user?.country ?? "US";
+  const kidsMode = !!user?.kidsMode;
   const providerStr = platformTmdbIds.join("|");
   const page = String(Math.floor(Math.random() * SURPRISE_MAX_PAGE) + 1);
 
@@ -57,6 +59,10 @@ export async function GET(request: Request) {
     page,
   };
   if (tvGenreIds) tvParams.with_genres = tvGenreIds;
+
+  // Kid-safety overrides any user genre pick (its with_genres/cert wins).
+  Object.assign(movieParams, kidsDiscoverParams("movie", kidsMode));
+  Object.assign(tvParams, kidsDiscoverParams("tv", kidsMode));
 
   const [movieResults, tvResults] = await Promise.all([
     discoverMovies(movieParams).then((r) => r.results ?? []).catch(() => []),
