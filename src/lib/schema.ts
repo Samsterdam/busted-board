@@ -28,6 +28,7 @@ export const users = pgTable("user", {
   country: text("country").notNull().default("US"),
   contentLanguage: text("content_language").notNull().default("any"),
   preferCaptions: boolean("prefer_captions").notNull().default(false),
+  kidsMode: boolean("kids_mode").notNull().default(false),
 });
 
 export const accounts = pgTable(

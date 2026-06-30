@@ -38,6 +38,7 @@ export default function SettingsPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [country, setCountry] = useState("US");
   const [preferCaptions, setPreferCaptions] = useState(false);
+  const [kidsMode, setKidsMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const isAdmin = process.env.NEXT_PUBLIC_SHOW_ADMIN === "true";
@@ -50,6 +51,7 @@ export default function SettingsPage() {
       setSelectedPlatforms((platData.selected ?? []).map((p: { slug: string }) => p.slug));
       setCountry(prefs.country ?? "US");
       setPreferCaptions(!!prefs.preferCaptions);
+      setKidsMode(!!prefs.kidsMode);
     }).catch(() => null).finally(() => setLoading(false));
   }, []);
 
@@ -65,7 +67,7 @@ export default function SettingsPage() {
         fetch("/api/user/preferences", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ country, preferCaptions }),
+          body: JSON.stringify({ country, preferCaptions, kidsMode }),
         }),
       ]);
       posthog.capture(EVENTS.PLATFORM_CHANGED, { platform_count: selectedPlatforms.length });
@@ -130,6 +132,38 @@ export default function SettingsPage() {
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
             </select>
+          </div>
+        </section>
+
+        {/* Content */}
+        <section aria-labelledby="content-heading">
+          <h2 id="content-heading" className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Content
+          </h2>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <div>
+                <p className="text-sm font-medium">Kids Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  Only show family-friendly movies &amp; shows in your recommendations, search, and Surprise. Browsing isn&rsquo;t locked.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={kidsMode}
+                onClick={() => setKidsMode((v) => !v)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-primary ${
+                  kidsMode ? "bg-primary" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    kidsMode ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </label>
           </div>
         </section>
 
