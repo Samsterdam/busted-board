@@ -36,4 +36,6 @@ export const env = {
   GROWTH_ADMIN_SECRET: process.env.GROWTH_ADMIN_SECRET,
   /** Optional — Sentry DSN for error tracking. No-op when unset. */
   SENTRY_DSN: process.env.SENTRY_DSN,
+  /** Optional — Bearer token Vercel Cron sends to the /api/health keep-alive route. */
+  CRON_SECRET: process.env.CRON_SECRET,
 } as const;

@@ -71,6 +71,7 @@ export default auth(async (req) => {
     pathname === "/privacy" ||
     pathname.startsWith("/top/") ||
     pathname.startsWith("/api/auth") ||
+    pathname === "/api/health" ||
     pathname === "/manifest.json" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon");
